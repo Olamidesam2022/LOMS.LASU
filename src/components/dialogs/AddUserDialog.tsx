@@ -19,7 +19,6 @@ import {
 } from '@/components/ui/select';
 import { UserRole } from '@/types/legal';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 import { Eye, EyeOff } from 'lucide-react';
 
 interface AddUserDialogProps {
@@ -62,36 +61,8 @@ export function AddUserDialog({ open, onOpenChange, onUserCreated }: AddUserDial
     setIsLoading(true);
 
     try {
-      // Get current session token
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-
-      if (!token) {
-        toast.error('You must be logged in to create users');
-        setIsLoading(false);
-        return;
-      }
-
-      const response = await supabase.functions.invoke('create-user', {
-        body: {
-          email: formData.email,
-          password: formData.password,
-          fullName: formData.name,
-          role: formData.role,
-          department: formData.department || undefined,
-        },
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message || 'Failed to create user');
-      }
-
-      if (response.data?.error) {
-        throw new Error(response.data.error);
-      }
-
-      toast.success('User created successfully', {
-        description: `${formData.name} has been added as a ${formData.role === 'admin' ? 'Administrator' : 'Legal Officer'}. They can now login with their email and password.`,
+      toast.info('Ask the user to sign up from the public signup page.', {
+        description: 'Supabase client-only apps cannot safely create another auth user. After signup, approve the profile here.',
       });
       
       setFormData({
@@ -181,7 +152,7 @@ export function AddUserDialog({ open, onOpenChange, onUserCreated }: AddUserDial
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="admin">Administrator</SelectItem>
-                <SelectItem value="legal_officer">Legal Officer</SelectItem>
+                <SelectItem value="staff">Staff</SelectItem>
               </SelectContent>
             </Select>
           </div>

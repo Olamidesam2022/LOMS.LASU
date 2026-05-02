@@ -22,8 +22,9 @@ interface UserManagementProps {
 }
 
 const roleStyles: Record<UserRole, { label: string; color: string }> = {
+  superadmin: { label: 'Superadmin', color: 'bg-primary text-primary-foreground' },
   admin: { label: 'Administrator', color: 'bg-accent/20 text-accent-foreground' },
-  legal_officer: { label: 'Legal Officer', color: 'bg-info/10 text-info' },
+  staff: { label: 'Staff', color: 'bg-info/10 text-info' },
 };
 
 export function UserManagement({ users, currentUser, onAddUser, onEditUser }: UserManagementProps) {
@@ -81,9 +82,9 @@ export function UserManagement({ users, currentUser, onAddUser, onEditUser }: Us
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">
-                {users.filter(u => u.role === 'legal_officer').length}
+                {users.filter(u => u.role === 'staff').length}
               </p>
-              <p className="text-sm text-muted-foreground">Legal Officers</p>
+              <p className="text-sm text-muted-foreground">Staff</p>
             </div>
           </div>
         </div>
@@ -113,7 +114,7 @@ export function UserManagement({ users, currentUser, onAddUser, onEditUser }: Us
           />
         </div>
         <div className="flex gap-2">
-          {(['all', 'admin', 'legal_officer'] as const).map(role => (
+          {(['all', 'superadmin', 'admin', 'staff'] as const).map(role => (
             <button
               key={role}
               onClick={() => setRoleFilter(role)}
@@ -159,6 +160,11 @@ export function UserManagement({ users, currentUser, onAddUser, onEditUser }: Us
                     <span className={cn("status-pill text-xs", roleStyles[user.role].color)}>
                       {roleStyles[user.role].label}
                     </span>
+                    {user.status && (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {user.status}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <button className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
@@ -232,7 +238,7 @@ export function UserManagement({ users, currentUser, onAddUser, onEditUser }: Us
             </ul>
           </div>
           <div className="rounded-lg bg-card p-4">
-            <h4 className="mb-2 font-medium text-foreground">Legal Officer</h4>
+            <h4 className="mb-2 font-medium text-foreground">Staff</h4>
             <ul className="space-y-1 text-sm text-muted-foreground">
               <li>• Case management</li>
               <li>• Advisory workflow</li>

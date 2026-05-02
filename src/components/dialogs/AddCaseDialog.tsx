@@ -24,9 +24,19 @@ import { toast } from 'sonner';
 interface AddCaseDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onCreateCase?: (input: {
+    title: string;
+    description?: string;
+    suitNumber?: string;
+    adversaryParty?: string;
+    proceduralStage?: string;
+    assignedCounsel?: string;
+    court?: string;
+    nextHearing?: string;
+  }) => Promise<void>;
 }
 
-export function AddCaseDialog({ open, onOpenChange }: AddCaseDialogProps) {
+export function AddCaseDialog({ open, onOpenChange, onCreateCase }: AddCaseDialogProps) {
   const [formData, setFormData] = useState({
     suitNumber: '',
     caseTitle: '',
@@ -38,7 +48,9 @@ export function AddCaseDialog({ open, onOpenChange }: AddCaseDialogProps) {
     description: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.suitNumber || !formData.caseTitle || !formData.adversaryParty) {
@@ -46,23 +58,41 @@ export function AddCaseDialog({ open, onOpenChange }: AddCaseDialogProps) {
       return;
     }
 
-    // Here you would typically save to the database
-    toast.success('Case created successfully', {
-      description: `Case ${formData.suitNumber} has been added to the registry.`,
-    });
-    
-    // Reset form and close
-    setFormData({
-      suitNumber: '',
-      caseTitle: '',
-      adversaryParty: '',
-      proceduralStage: '',
-      assignedCounsel: '',
-      court: '',
-      nextHearing: '',
-      description: '',
-    });
-    onOpenChange(false);
+    setIsLoading(true);
+    try {
+      await onCreateCase?.({
+        title: formData.caseTitle,
+        description: formData.description,
+        suitNumber: formData.suitNumber,
+        adversaryParty: formData.adversaryParty,
+        proceduralStage: formData.proceduralStage || "Mention",
+        assignedCounsel: formData.assignedCounsel,
+        court: formData.court,
+        nextHearing: formData.nextHearing,
+      });
+
+      toast.success('Case created successfully', {
+        description: `Case ${formData.suitNumber} has been added to the registry.`,
+      });
+      
+      setFormData({
+        suitNumber: '',
+        caseTitle: '',
+        adversaryParty: '',
+        proceduralStage: '',
+        assignedCounsel: '',
+        court: '',
+        nextHearing: '',
+        description: '',
+      });
+      onOpenChange(false);
+    } catch (error: any) {
+      toast.error('Failed to create case', {
+        description: error.message || 'Please try again.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -170,7 +200,9 @@ export function AddCaseDialog({ open, onOpenChange }: AddCaseDialogProps) {
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">Create Case</Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? 'Creating...' : 'Create Case'}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
