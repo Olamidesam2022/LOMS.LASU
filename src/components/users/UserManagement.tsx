@@ -19,6 +19,7 @@ interface UserManagementProps {
   currentUser: User;
   onAddUser?: () => void;
   onEditUser?: (user: User) => void;
+  onDeactivateUser?: (user: User) => void;
 }
 
 const roleStyles: Record<UserRole, { label: string; color: string }> = {
@@ -27,7 +28,7 @@ const roleStyles: Record<UserRole, { label: string; color: string }> = {
   staff: { label: 'Staff', color: 'bg-info/10 text-info' },
 };
 
-export function UserManagement({ users, currentUser, onAddUser, onEditUser }: UserManagementProps) {
+export function UserManagement({ users, currentUser, onAddUser, onEditUser, onDeactivateUser }: UserManagementProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
 
@@ -167,7 +168,10 @@ export function UserManagement({ users, currentUser, onAddUser, onEditUser }: Us
                     )}
                   </div>
                 </div>
-                <button className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                <button
+                  onClick={() => onEditUser?.(user)}
+                  className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
                   <MoreHorizontal className="h-5 w-5" />
                 </button>
               </div>
@@ -192,6 +196,7 @@ export function UserManagement({ users, currentUser, onAddUser, onEditUser }: Us
                   <span>Edit</span>
                 </button>
                 <button 
+                  onClick={() => onDeactivateUser?.(user)}
                   className={cn(
                     "rounded-lg p-2 transition-colors",
                     isCurrentUser 

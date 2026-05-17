@@ -50,6 +50,8 @@ export interface LegalDocument {
   name: string;
   type: DocumentType;
   caseId?: string;
+  storagePath?: string;
+  mimeType?: string;
   version: string;
   uploadedBy: string;
   uploadedAt: Date;

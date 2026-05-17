@@ -73,6 +73,35 @@ export function AuditTrail({ logs }: AuditTrailProps) {
 
   const actions = ['VIEW', 'UPDATE', 'CREATE', 'DELETE', 'DOWNLOAD'];
 
+  const handleExport = () => {
+    const headers = ["Timestamp", "User", "Action", "Resource", "Resource ID", "Details", "IP Address"];
+    const rows = filteredLogs.map((log) => [
+      formatTimestamp(log.timestamp),
+      log.userName,
+      log.action,
+      log.resource,
+      log.resourceId,
+      log.details,
+      log.ipAddress,
+    ]);
+    const csv = [headers, ...rows]
+      .map((row) =>
+        row
+          .map((cell) => `"${String(cell).replace(/"/g, '""')}"`)
+          .join(","),
+      )
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `audit-log-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const formatTimestamp = (date: Date) => {
     return date.toLocaleString('en-NG', {
       year: 'numeric',
@@ -159,7 +188,10 @@ export function AuditTrail({ logs }: AuditTrailProps) {
             <option value="week">Last 7 Days</option>
             <option value="month">Last 30 Days</option>
           </select>
-          <button className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted">
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+          >
             <Download className="h-4 w-4" />
             <span>Export</span>
           </button>

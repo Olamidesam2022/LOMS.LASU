@@ -25,9 +25,15 @@ import { cn } from '@/lib/utils';
 interface UploadDocumentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onUploadDocument?: (input: {
+    name: string;
+    type: DocumentType;
+    relatedCase?: string;
+    file?: File | null;
+  }) => Promise<void>;
 }
 
-export function UploadDocumentDialog({ open, onOpenChange }: UploadDocumentDialogProps) {
+export function UploadDocumentDialog({ open, onOpenChange, onUploadDocument }: UploadDocumentDialogProps) {
   const [formData, setFormData] = useState({
     name: '',
     type: '' as DocumentType | '',
@@ -35,6 +41,7 @@ export function UploadDocumentDialog({ open, onOpenChange }: UploadDocumentDialo
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (file: File) => {
@@ -51,7 +58,7 @@ export function UploadDocumentDialog({ open, onOpenChange }: UploadDocumentDialo
     if (file) handleFileSelect(file);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!selectedFile || !formData.name || !formData.type) {
@@ -59,13 +66,28 @@ export function UploadDocumentDialog({ open, onOpenChange }: UploadDocumentDialo
       return;
     }
 
-    toast.success('Document uploaded successfully', {
-      description: `"${formData.name}" has been added to the vault.`,
-    });
-    
-    setFormData({ name: '', type: '', relatedCase: '' });
-    setSelectedFile(null);
-    onOpenChange(false);
+    setIsLoading(true);
+    try {
+      await onUploadDocument?.({
+        name: formData.name,
+        type: formData.type,
+        relatedCase: formData.relatedCase,
+        file: selectedFile,
+      });
+      toast.success('Document uploaded successfully', {
+        description: `"${formData.name}" has been added to the vault.`,
+      });
+      
+      setFormData({ name: '', type: '', relatedCase: '' });
+      setSelectedFile(null);
+      onOpenChange(false);
+    } catch (error: any) {
+      toast.error('Failed to upload document', {
+        description: error.message || 'Please try again.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const resetForm = () => {
@@ -184,8 +206,8 @@ export function UploadDocumentDialog({ open, onOpenChange }: UploadDocumentDialo
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!selectedFile}>
-              Upload Document
+            <Button type="submit" disabled={!selectedFile || isLoading}>
+              {isLoading ? 'Uploading...' : 'Upload Document'}
             </Button>
           </DialogFooter>
         </form>

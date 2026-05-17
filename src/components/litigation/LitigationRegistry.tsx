@@ -4,7 +4,6 @@ import {
   Filter, 
   Plus, 
   ChevronDown, 
-  MoreHorizontal,
   Calendar,
   User,
   MapPin,
@@ -20,6 +19,7 @@ interface LitigationRegistryProps {
   onAddCase?: () => void;
   onViewCase?: (caseItem: LitigationCase) => void;
   onEditCase?: (caseItem: LitigationCase) => void;
+  onDeleteCase?: (caseItem: LitigationCase) => void;
 }
 
 const stageColors: Record<ProceduralStage, string> = {
@@ -29,7 +29,7 @@ const stageColors: Record<ProceduralStage, string> = {
   Judgment: 'status-judgment',
 };
 
-export function LitigationRegistry({ cases, onAddCase, onViewCase, onEditCase }: LitigationRegistryProps) {
+export function LitigationRegistry({ cases, onAddCase, onViewCase, onEditCase, onDeleteCase }: LitigationRegistryProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [stageFilter, setStageFilter] = useState<ProceduralStage | 'all'>('all');
   const [showFilters, setShowFilters] = useState(false);
@@ -192,7 +192,10 @@ export function LitigationRegistry({ cases, onAddCase, onViewCase, onEditCase }:
                       >
                         <Edit className="h-4 w-4" />
                       </button>
-                      <button className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive">
+                      <button
+                        onClick={() => onDeleteCase?.(caseItem)}
+                        className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                      >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
@@ -219,9 +222,26 @@ export function LitigationRegistry({ cases, onAddCase, onViewCase, onEditCase }:
                   {caseItem.proceduralStage}
                 </span>
               </div>
-              <button className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted">
-                <MoreHorizontal className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => onViewCase?.(caseItem)}
+                  className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted"
+                >
+                  <Eye className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => onEditCase?.(caseItem)}
+                  className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted"
+                >
+                  <Edit className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => onDeleteCase?.(caseItem)}
+                  className="rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
             </div>
             
             <h4 className="mb-1 font-medium text-foreground">{caseItem.caseTitle}</h4>

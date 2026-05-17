@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardMetrics, LitigationCase } from "@/types/legal";
 import { useAuth } from "@/context/AuthContext";
+import { writeAuditLog } from "@/lib/audit";
 
 interface CaseRow {
   id: string;
@@ -9,6 +10,17 @@ interface CaseRow {
   description: string | null;
   created_by: string;
   created_at: string;
+}
+
+export interface CaseInput {
+  title: string;
+  description?: string;
+  suitNumber?: string;
+  adversaryParty?: string;
+  proceduralStage?: string;
+  assignedCounsel?: string;
+  court?: string;
+  nextHearing?: string;
 }
 
 const parseDescription = (description: string | null) => {
@@ -66,33 +78,86 @@ export function useCases() {
   }, [isApproved, user]);
 
   const createCase = useCallback(
-    async (input: {
-      title: string;
-      description?: string;
-      suitNumber?: string;
-      adversaryParty?: string;
-      proceduralStage?: string;
-      assignedCounsel?: string;
-      court?: string;
-      nextHearing?: string;
-    }) => {
+    async (input: CaseInput) => {
       if (!user) throw new Error("You must be logged in to create a case.");
 
-      const { error } = await supabase.from("cases").insert({
-        title: input.title,
-        created_by: user.id,
-        description: JSON.stringify({
-          description: input.description || "",
-          suitNumber: input.suitNumber || "",
-          adversaryParty: input.adversaryParty || "",
-          proceduralStage: input.proceduralStage || "Mention",
-          assignedCounsel: input.assignedCounsel || "",
-          court: input.court || "",
-          nextHearing: input.nextHearing || null,
-        }),
-      });
+      const { data, error } = await supabase
+        .from("cases")
+        .insert({
+          title: input.title,
+          created_by: user.id,
+          description: JSON.stringify({
+            description: input.description || "",
+            suitNumber: input.suitNumber || "",
+            adversaryParty: input.adversaryParty || "",
+            proceduralStage: input.proceduralStage || "Mention",
+            assignedCounsel: input.assignedCounsel || "",
+            court: input.court || "",
+            nextHearing: input.nextHearing || null,
+          }),
+        })
+        .select("id")
+        .single();
 
       if (error) throw error;
+      await writeAuditLog({
+        action: "CREATE",
+        performedBy: user.id,
+        targetId: data.id,
+        resource: "Case",
+        details: `Created case: ${input.title}`,
+      });
+      await fetchCases();
+    },
+    [fetchCases, user],
+  );
+
+  const updateCase = useCallback(
+    async (id: string, input: CaseInput) => {
+      if (!user) throw new Error("You must be logged in to update a case.");
+
+      const { error } = await supabase
+        .from("cases")
+        .update({
+          title: input.title,
+          description: JSON.stringify({
+            description: input.description || "",
+            suitNumber: input.suitNumber || "",
+            adversaryParty: input.adversaryParty || "",
+            proceduralStage: input.proceduralStage || "Mention",
+            assignedCounsel: input.assignedCounsel || "",
+            court: input.court || "",
+            nextHearing: input.nextHearing || null,
+          }),
+        })
+        .eq("id", id);
+
+      if (error) throw error;
+      await writeAuditLog({
+        action: "UPDATE",
+        performedBy: user.id,
+        targetId: id,
+        resource: "Case",
+        details: `Updated case: ${input.title}`,
+      });
+      await fetchCases();
+    },
+    [fetchCases, user],
+  );
+
+  const deleteCase = useCallback(
+    async (caseItem: LitigationCase) => {
+      if (!user) throw new Error("You must be logged in to delete a case.");
+
+      const { error } = await supabase.from("cases").delete().eq("id", caseItem.id);
+      if (error) throw error;
+      await writeAuditLog({
+        action: "DELETE",
+        performedBy: user.id,
+        targetId: caseItem.id,
+        resource: "Case",
+        details: `Deleted case: ${caseItem.caseTitle}`,
+      });
       await fetchCases();
     },
     [fetchCases, user],
@@ -120,5 +185,13 @@ export function useCases() {
     };
   }, [cases]);
 
-  return { cases, metrics, isLoading, fetchCases, createCase };
+  return {
+    cases,
+    metrics,
+    isLoading,
+    fetchCases,
+    createCase,
+    updateCase,
+    deleteCase,
+  };
 }

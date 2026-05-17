@@ -59,7 +59,7 @@ export function Dashboard({
         />
         <MetricCard
           title="Advisory Backlog"
-          value={metrics.advisoryBacklog}
+          value={pendingAdvisory}
           subtitle={`${urgentAdvisory} urgent requests`}
           icon={FileText}
           variant="warning"

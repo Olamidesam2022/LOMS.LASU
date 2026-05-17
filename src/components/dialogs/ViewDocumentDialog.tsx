@@ -9,12 +9,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { LegalDocument } from '@/types/legal';
 import { Calendar, User, FileText, Download, Tag, History } from 'lucide-react';
-import { toast } from 'sonner';
 
 interface ViewDocumentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   document: LegalDocument | null;
+  onDownloadDocument?: (doc: LegalDocument) => Promise<void> | void;
 }
 
 const typeColors = {
@@ -31,11 +31,11 @@ const statusColors = {
   Archived: 'bg-muted text-muted-foreground',
 };
 
-export function ViewDocumentDialog({ open, onOpenChange, document }: ViewDocumentDialogProps) {
+export function ViewDocumentDialog({ open, onOpenChange, document, onDownloadDocument }: ViewDocumentDialogProps) {
   if (!document) return null;
 
-  const handleDownload = () => {
-    toast.success(`Downloading: ${document.name}`);
+  const handleDownload = async () => {
+    await onDownloadDocument?.(document);
   };
 
   return (

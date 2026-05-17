@@ -23,6 +23,7 @@ interface DocumentVaultProps {
   onUpload?: () => void;
   onViewDocument?: (doc: LegalDocument) => void;
   onDownloadDocument?: (doc: LegalDocument) => void;
+  onDeleteDocument?: (doc: LegalDocument) => void;
 }
 
 const typeIcons: Record<DocumentType, React.ElementType> = {
@@ -47,7 +48,7 @@ const statusStyles = {
   Archived: 'bg-muted text-muted-foreground',
 };
 
-export function DocumentVault({ documents, onUpload, onViewDocument, onDownloadDocument }: DocumentVaultProps) {
+export function DocumentVault({ documents, onUpload, onViewDocument, onDownloadDocument, onDeleteDocument }: DocumentVaultProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<DocumentType | 'all'>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -221,7 +222,10 @@ export function DocumentVault({ documents, onUpload, onViewDocument, onDownloadD
                   >
                     <Download className="h-4 w-4" />
                   </button>
-                  <button className="rounded-lg bg-muted p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive">
+                  <button
+                    onClick={() => onDeleteDocument?.(doc)}
+                    className="rounded-lg bg-muted p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                  >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
@@ -292,6 +296,12 @@ export function DocumentVault({ documents, onUpload, onViewDocument, onDownloadD
                           className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                         >
                           <Download className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => onDeleteDocument?.(doc)}
+                          className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     </td>

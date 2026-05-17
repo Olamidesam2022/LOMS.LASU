@@ -13,6 +13,7 @@ import {
 import { User } from "@/types/legal";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SettingsProps {
   currentUser: User;
@@ -35,6 +36,21 @@ export function Settings({ currentUser }: SettingsProps) {
     setHearingReminders(true);
     setDeadlineAlerts(true);
     toast.info("Settings reset to defaults");
+  };
+
+  const handleChangePassword = async () => {
+    const { error } = await supabase.auth.resetPasswordForEmail(currentUser.email, {
+      redirectTo: window.location.origin,
+    });
+
+    if (error) {
+      toast.error("Could not send password reset email", {
+        description: error.message,
+      });
+      return;
+    }
+
+    toast.success("Password reset email sent");
   };
 
   return (
@@ -218,7 +234,10 @@ export function Settings({ currentUser }: SettingsProps) {
                 })}
               </p>
             </div>
-            <button className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted">
+            <button
+              onClick={handleChangePassword}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+            >
               <Lock className="h-4 w-4" />
               Change Password
             </button>

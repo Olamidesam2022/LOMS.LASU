@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ProceduralStage, CaseStatus } from '@/types/legal';
+import { LitigationCase, ProceduralStage } from '@/types/legal';
 import { toast } from 'sonner';
 
 interface AddCaseDialogProps {
@@ -34,9 +34,10 @@ interface AddCaseDialogProps {
     court?: string;
     nextHearing?: string;
   }) => Promise<void>;
+  caseItem?: LitigationCase | null;
 }
 
-export function AddCaseDialog({ open, onOpenChange, onCreateCase }: AddCaseDialogProps) {
+export function AddCaseDialog({ open, onOpenChange, onCreateCase, caseItem }: AddCaseDialogProps) {
   const [formData, setFormData] = useState({
     suitNumber: '',
     caseTitle: '',
@@ -49,6 +50,34 @@ export function AddCaseDialog({ open, onOpenChange, onCreateCase }: AddCaseDialo
   });
 
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+
+    if (caseItem) {
+      setFormData({
+        suitNumber: caseItem.suitNumber === "Unassigned" ? "" : caseItem.suitNumber,
+        caseTitle: caseItem.caseTitle,
+        adversaryParty: caseItem.adversaryParty === "Unspecified" ? "" : caseItem.adversaryParty,
+        proceduralStage: caseItem.proceduralStage,
+        assignedCounsel: caseItem.assignedCounsel === "Unassigned" ? "" : caseItem.assignedCounsel,
+        court: caseItem.court === "Unspecified" ? "" : caseItem.court,
+        nextHearing: caseItem.nextHearing.toISOString().slice(0, 10),
+        description: caseItem.description,
+      });
+    } else {
+      setFormData({
+        suitNumber: '',
+        caseTitle: '',
+        adversaryParty: '',
+        proceduralStage: '',
+        assignedCounsel: '',
+        court: '',
+        nextHearing: '',
+        description: '',
+      });
+    }
+  }, [caseItem, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,8 +100,8 @@ export function AddCaseDialog({ open, onOpenChange, onCreateCase }: AddCaseDialo
         nextHearing: formData.nextHearing,
       });
 
-      toast.success('Case created successfully', {
-        description: `Case ${formData.suitNumber} has been added to the registry.`,
+      toast.success(caseItem ? 'Case updated successfully' : 'Case created successfully', {
+        description: `Case ${formData.suitNumber || formData.caseTitle} has been saved.`,
       });
       
       setFormData({
@@ -99,7 +128,7 @@ export function AddCaseDialog({ open, onOpenChange, onCreateCase }: AddCaseDialo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Add New Case</DialogTitle>
+          <DialogTitle>{caseItem ? "Edit Case" : "Add New Case"}</DialogTitle>
           <DialogDescription>
             Enter the details for the new litigation case.
           </DialogDescription>
@@ -201,7 +230,7 @@ export function AddCaseDialog({ open, onOpenChange, onCreateCase }: AddCaseDialo
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Creating...' : 'Create Case'}
+              {isLoading ? 'Saving...' : caseItem ? 'Save Case' : 'Create Case'}
             </Button>
           </DialogFooter>
         </form>

@@ -9,6 +9,9 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useCases } from "@/hooks/useCases";
 import { useProfiles } from "@/hooks/useProfiles";
+import { useAdvisoryRequests } from "@/hooks/useAdvisoryRequests";
+import { useAuditLogs } from "@/hooks/useAuditLogs";
+import { useDocuments } from "@/hooks/useDocuments";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { Dashboard } from "@/components/dashboard/Dashboard";
@@ -48,8 +51,11 @@ const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const mainContentRef = useRef<HTMLDivElement>(null);
-  const { cases, metrics, createCase } = useCases();
-  const { users: dbUsers, fetchUsers } = useProfiles();
+  const { cases, metrics, createCase, updateCase, deleteCase } = useCases();
+  const { advisoryRequests, createAdvisoryRequest } = useAdvisoryRequests();
+  const { documents, createDocument, downloadDocument, deleteDocument } = useDocuments();
+  const { auditLogs } = useAuditLogs();
+  const { users: dbUsers, fetchUsers, updateUser } = useProfiles();
 
   // Dialog states
   const [addCaseOpen, setAddCaseOpen] = useState(false);
@@ -94,7 +100,21 @@ const Index = () => {
   };
 
   const handleEditCase = (caseItem: LitigationCase) => {
-    toast.info(`Editing case: ${caseItem.suitNumber}`);
+    setSelectedCase(caseItem);
+    setAddCaseOpen(true);
+  };
+
+  const handleDeleteCase = async (caseItem: LitigationCase) => {
+    if (!window.confirm(`Delete case "${caseItem.caseTitle}"?`)) return;
+
+    try {
+      await deleteCase(caseItem);
+      toast.success("Case deleted");
+    } catch (error: any) {
+      toast.error("Failed to delete case", {
+        description: error.message || "Please try again.",
+      });
+    }
   };
 
   const handleViewAdvisory = (request: AdvisoryRequest) => {
@@ -107,12 +127,84 @@ const Index = () => {
     setViewDocumentOpen(true);
   };
 
-  const handleDownloadDocument = (doc: LegalDocument) => {
-    toast.success(`Downloading: ${doc.name}`);
+  const handleDownloadDocument = async (doc: LegalDocument) => {
+    try {
+      await downloadDocument(doc);
+      toast.success(`Opening document: ${doc.name}`);
+    } catch (error: any) {
+      toast.error("Failed to download document", {
+        description: error.message || "Please try again.",
+      });
+    }
   };
 
-  const handleEditUser = (legacyUser: LegacyUser) => {
-    toast.info(`Editing user: ${legacyUser.name}`);
+  const handleDeleteDocument = async (doc: LegalDocument) => {
+    if (!window.confirm(`Delete document "${doc.name}"?`)) return;
+
+    try {
+      await deleteDocument(doc);
+      toast.success("Document deleted");
+    } catch (error: any) {
+      toast.error("Failed to delete document", {
+        description: error.message || "Please try again.",
+      });
+    }
+  };
+
+  const handleEditUser = async (legacyUser: LegacyUser) => {
+    if (role !== "superadmin") {
+      toast.error("Only superadmin can edit users.");
+      return;
+    }
+
+    const nextRole = window.prompt(
+      "Enter role: superadmin, admin, or staff",
+      legacyUser.role,
+    ) as "superadmin" | "admin" | "staff" | null;
+
+    if (!nextRole) return;
+    if (!["superadmin", "admin", "staff"].includes(nextRole)) {
+      toast.error("Invalid role selected.");
+      return;
+    }
+
+    const nextStatus = window.prompt(
+      "Enter status: pending, approved, or rejected",
+      legacyUser.status || "approved",
+    ) as "pending" | "approved" | "rejected" | null;
+
+    if (!nextStatus) return;
+    if (!["pending", "approved", "rejected"].includes(nextStatus)) {
+      toast.error("Invalid status selected.");
+      return;
+    }
+
+    try {
+      await updateUser(legacyUser.id, { role: nextRole, status: nextStatus });
+      toast.success("User updated.");
+    } catch (error: any) {
+      toast.error("Failed to update user", {
+        description: error.message || "Please try again.",
+      });
+    }
+  };
+
+  const handleDeactivateUser = async (legacyUser: LegacyUser) => {
+    if (legacyUser.id === user?.id) {
+      toast.error("You cannot deactivate your own account.");
+      return;
+    }
+
+    if (!window.confirm(`Deactivate ${legacyUser.name}?`)) return;
+
+    try {
+      await updateUser(legacyUser.id, { status: "rejected" });
+      toast.success("User deactivated.");
+    } catch (error: any) {
+      toast.error("Failed to deactivate user", {
+        description: error.message || "Please try again.",
+      });
+    }
   };
 
   // Show loading state
@@ -151,8 +243,8 @@ const Index = () => {
           <Dashboard
             metrics={metrics}
             cases={cases}
-            advisoryRequests={[]}
-            auditLogs={[]}
+            advisoryRequests={advisoryRequests}
+            auditLogs={auditLogs}
             onNavigate={setActiveView}
           />
         );
@@ -163,12 +255,13 @@ const Index = () => {
             onAddCase={() => setAddCaseOpen(true)}
             onViewCase={handleViewCase}
             onEditCase={handleEditCase}
+            onDeleteCase={handleDeleteCase}
           />
         );
       case "advisory":
         return (
           <AdvisoryWorkflow
-            requests={[]}
+            requests={advisoryRequests}
             onAddRequest={() => setAddAdvisoryOpen(true)}
             onViewRequest={handleViewAdvisory}
           />
@@ -176,14 +269,15 @@ const Index = () => {
       case "documents":
         return (
           <DocumentVault
-            documents={[]}
+            documents={documents}
             onUpload={() => setUploadDocumentOpen(true)}
             onViewDocument={handleViewDocument}
             onDownloadDocument={handleDownloadDocument}
+            onDeleteDocument={handleDeleteDocument}
           />
         );
       case "audit":
-        return <AuditTrail logs={[]} />;
+        return <AuditTrail logs={auditLogs} />;
       case "users":
         return (
           <UserManagement
@@ -191,6 +285,7 @@ const Index = () => {
             currentUser={currentUser}
             onAddUser={() => setAddUserOpen(true)}
             onEditUser={handleEditUser}
+            onDeactivateUser={handleDeactivateUser}
           />
         );
       case "settings":
@@ -202,8 +297,8 @@ const Index = () => {
           <Dashboard
             metrics={metrics}
             cases={cases}
-            advisoryRequests={[]}
-            auditLogs={[]}
+            advisoryRequests={advisoryRequests}
+            auditLogs={auditLogs}
             onNavigate={setActiveView}
           />
         );
@@ -248,16 +343,24 @@ const Index = () => {
       {/* Dialogs */}
       <AddCaseDialog
         open={addCaseOpen}
-        onOpenChange={setAddCaseOpen}
-        onCreateCase={createCase}
+        onOpenChange={(open) => {
+          setAddCaseOpen(open);
+          if (!open) setSelectedCase(null);
+        }}
+        caseItem={selectedCase}
+        onCreateCase={(input) =>
+          selectedCase ? updateCase(selectedCase.id, input) : createCase(input)
+        }
       />
       <AddAdvisoryDialog
         open={addAdvisoryOpen}
         onOpenChange={setAddAdvisoryOpen}
+        onCreateRequest={createAdvisoryRequest}
       />
       <UploadDocumentDialog
         open={uploadDocumentOpen}
         onOpenChange={setUploadDocumentOpen}
+        onUploadDocument={createDocument}
       />
       <AddUserDialog
         open={addUserOpen}
@@ -278,6 +381,7 @@ const Index = () => {
         open={viewDocumentOpen}
         onOpenChange={setViewDocumentOpen}
         document={selectedDocument}
+        onDownloadDocument={handleDownloadDocument}
       />
     </div>
   );

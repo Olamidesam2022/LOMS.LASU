@@ -23,9 +23,18 @@ import { toast } from 'sonner';
 interface AddAdvisoryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onCreateRequest?: (input: {
+    title: string;
+    requestedBy: string;
+    department: string;
+    priority?: string;
+    dueDate?: string;
+    assignedTo?: string;
+    description?: string;
+  }) => Promise<void>;
 }
 
-export function AddAdvisoryDialog({ open, onOpenChange }: AddAdvisoryDialogProps) {
+export function AddAdvisoryDialog({ open, onOpenChange, onCreateRequest }: AddAdvisoryDialogProps) {
   const [formData, setFormData] = useState({
     title: '',
     requestedBy: '',
@@ -36,7 +45,9 @@ export function AddAdvisoryDialog({ open, onOpenChange }: AddAdvisoryDialogProps
     description: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.title || !formData.requestedBy || !formData.department) {
@@ -44,20 +55,30 @@ export function AddAdvisoryDialog({ open, onOpenChange }: AddAdvisoryDialogProps
       return;
     }
 
-    toast.success('Advisory request created successfully', {
-      description: `Request "${formData.title}" has been added.`,
-    });
-    
-    setFormData({
-      title: '',
-      requestedBy: '',
-      department: '',
-      priority: '',
-      dueDate: '',
-      assignedTo: '',
-      description: '',
-    });
-    onOpenChange(false);
+    setIsLoading(true);
+    try {
+      await onCreateRequest?.(formData);
+      toast.success('Advisory request created successfully', {
+        description: `Request "${formData.title}" has been added.`,
+      });
+      
+      setFormData({
+        title: '',
+        requestedBy: '',
+        department: '',
+        priority: '',
+        dueDate: '',
+        assignedTo: '',
+        description: '',
+      });
+      onOpenChange(false);
+    } catch (error: any) {
+      toast.error('Failed to create advisory request', {
+        description: error.message || 'Please try again.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -165,7 +186,9 @@ export function AddAdvisoryDialog({ open, onOpenChange }: AddAdvisoryDialogProps
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">Create Request</Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? 'Creating...' : 'Create Request'}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
