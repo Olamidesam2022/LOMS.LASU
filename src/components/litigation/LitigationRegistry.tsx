@@ -94,7 +94,7 @@ export function LitigationRegistry({ cases, onAddCase, onViewCase, onEditCase, o
 
       {/* Filter Options */}
       {showFilters && (
-        <div className="animate-fade-in rounded-lg border border-border bg-card p-4">
+        <div className="surface-card animate-fade-in p-4">
           <p className="mb-3 text-sm font-medium text-foreground">Procedural Stage</p>
           <div className="flex flex-wrap gap-2">
             <button
@@ -272,7 +272,7 @@ export function LitigationRegistry({ cases, onAddCase, onViewCase, onEditCase, o
 
       {/* Empty State */}
       {filteredCases.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-12 text-center">
+        <div className="surface-card flex flex-col items-center justify-center border-dashed py-12 text-center">
           <div className="mb-4 rounded-full bg-muted p-4">
             <Search className="h-8 w-8 text-muted-foreground" />
           </div>

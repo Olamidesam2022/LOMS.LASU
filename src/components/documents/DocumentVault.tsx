@@ -131,7 +131,22 @@ export function DocumentVault({ documents, onUpload, onViewDocument, onDownloadD
       </div>
 
       {/* Document Type Pills */}
-      <div className="flex flex-wrap gap-2">
+      <div className="surface-card flex flex-wrap gap-2 p-2">
+        <button
+          onClick={() => setTypeFilter('all')}
+          className={cn(
+            "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all",
+            typeFilter === 'all'
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          )}
+        >
+          <FolderOpen className="h-4 w-4" />
+          <span>All</span>
+          <span className="rounded-md bg-background/60 px-1.5 py-0.5 text-xs">
+            {documents.length}
+          </span>
+        </button>
         {documentTypes.map(type => {
           const count = documents.filter(d => d.type === type).length;
           const Icon = typeIcons[type];
@@ -141,10 +156,10 @@ export function DocumentVault({ documents, onUpload, onViewDocument, onDownloadD
               key={type}
               onClick={() => setTypeFilter(type === typeFilter ? 'all' : type)}
               className={cn(
-                "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all",
+                "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all",
                 typeFilter === type 
                   ? typeColors[type]
-                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >
               <Icon className="h-4 w-4" />
@@ -166,65 +181,78 @@ export function DocumentVault({ documents, onUpload, onViewDocument, onDownloadD
             return (
               <div
                 key={doc.id}
-                className="document-card group animate-fade-in"
+                className="document-card group animate-fade-in p-0"
                 style={{ animationDelay: `${index * 30}ms` }}
               >
-                {/* Document Icon */}
-                <div className={cn("mb-4 flex h-16 w-16 items-center justify-center rounded-xl", typeColors[doc.type])}>
-                  <Icon className="h-8 w-8" />
-                </div>
-
-                {/* Document Info */}
-                <div className="mb-3">
-                  <h4 className="mb-1 line-clamp-2 font-medium text-foreground">{doc.name}</h4>
-                  <div className="flex items-center gap-2">
-                    <span className={cn("status-pill text-xs", statusStyles[doc.status])}>
+                <div className="border-b border-border/70 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-lg shadow-sm", typeColors[doc.type])}>
+                      <Icon className="h-6 w-6" />
+                    </div>
+                    <span className={cn("status-pill", statusStyles[doc.status])}>
                       {doc.status}
                     </span>
-                    <span className="text-xs text-muted-foreground">v{doc.version}</span>
+                  </div>
+                  <div className="mt-4">
+                    <h4 className="line-clamp-2 min-h-[2.5rem] text-sm font-bold leading-5 text-foreground">
+                      {doc.name}
+                    </h4>
+                    <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className={cn("rounded-md px-2 py-1 font-semibold", typeColors[doc.type])}>
+                        {doc.type}
+                      </span>
+                      <span className="rounded-md bg-muted px-2 py-1 font-semibold">v{doc.version}</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Metadata */}
-                <div className="mb-4 space-y-1 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-1.5">
-                    <User className="h-3.5 w-3.5" />
+                <div className="space-y-3 p-4">
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="rounded-lg bg-muted/60 p-2">
+                      <div className="mb-1 flex items-center gap-1.5 text-muted-foreground">
+                        <Clock className="h-3.5 w-3.5" />
+                        <span>Modified</span>
+                      </div>
+                      <p className="font-semibold text-foreground">
+                        {doc.lastModified.toLocaleDateString('en-NG', {
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-muted/60 p-2">
+                      <div className="mb-1 flex items-center gap-1.5 text-muted-foreground">
+                        <Tag className="h-3.5 w-3.5" />
+                        <span>Size</span>
+                      </div>
+                      <p className="font-semibold text-foreground">{doc.size}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                    <User className="h-3.5 w-3.5 shrink-0" />
                     <span className="truncate">{doc.uploadedBy}</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <Clock className="h-3.5 w-3.5" />
-                    <span>
-                      {doc.lastModified.toLocaleDateString('en-NG', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Tag className="h-3.5 w-3.5" />
-                    <span>{doc.size}</span>
-                  </div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex gap-2 border-t border-border pt-3">
+                <div className="flex gap-2 border-t border-border/70 bg-muted/20 p-3">
                   <button 
                     onClick={() => onViewDocument?.(doc)}
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-muted py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/80"
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-background py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-muted"
                   >
                     <Eye className="h-4 w-4" />
                     <span>View</span>
                   </button>
                   <button 
                     onClick={() => onDownloadDocument?.(doc)}
-                    className="rounded-lg bg-muted p-2 text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground"
+                    className="icon-button bg-background shadow-sm"
+                    aria-label={`Download ${doc.name}`}
                   >
                     <Download className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => onDeleteDocument?.(doc)}
-                    className="rounded-lg bg-muted p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                    className="icon-button bg-background shadow-sm hover:bg-destructive/10 hover:text-destructive"
+                    aria-label={`Delete ${doc.name}`}
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -256,50 +284,54 @@ export function DocumentVault({ documents, onUpload, onViewDocument, onDownloadD
                 const Icon = typeIcons[doc.type];
                 
                 return (
-                  <tr 
+                  <tr
                     key={doc.id} 
                     className="table-row animate-fade-in"
                     style={{ animationDelay: `${index * 20}ms` }}
                   >
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
-                        <div className={cn("rounded-lg p-2", typeColors[doc.type])}>
-                          <Icon className="h-4 w-4" />
+                        <div className={cn("flex h-11 w-11 items-center justify-center rounded-lg shadow-sm", typeColors[doc.type])}>
+                          <Icon className="h-5 w-5" />
                         </div>
-                        <div>
-                          <p className="font-medium text-foreground">{doc.name}</p>
-                          <p className="text-xs text-muted-foreground">{doc.uploadedBy}</p>
+                        <div className="min-w-0">
+                          <p className="truncate font-bold text-foreground">{doc.name}</p>
+                          <p className="truncate text-xs text-muted-foreground">Uploaded by {doc.uploadedBy}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">{doc.type}</td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">v{doc.version}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-4">
+                      <span className={cn("rounded-md px-2 py-1 text-xs font-semibold", typeColors[doc.type])}>
+                        {doc.type}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-sm font-semibold text-muted-foreground">v{doc.version}</td>
+                    <td className="px-4 py-4">
                       <span className={cn("status-pill text-xs", statusStyles[doc.status])}>
                         {doc.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">
+                    <td className="px-4 py-4 text-sm text-muted-foreground">
                       {doc.lastModified.toLocaleDateString('en-NG')}
                     </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">{doc.size}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-4 text-sm text-muted-foreground">{doc.size}</td>
+                    <td className="px-4 py-4">
                       <div className="flex justify-end gap-1">
                         <button 
                           onClick={() => onViewDocument?.(doc)}
-                          className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                          className="icon-button"
                         >
                           <Eye className="h-4 w-4" />
                         </button>
                         <button 
                           onClick={() => onDownloadDocument?.(doc)}
-                          className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                          className="icon-button"
                         >
                           <Download className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => onDeleteDocument?.(doc)}
-                          className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                          className="icon-button hover:bg-destructive/10 hover:text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -316,7 +348,7 @@ export function DocumentVault({ documents, onUpload, onViewDocument, onDownloadD
 
       {/* Empty State */}
       {filteredDocuments.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-12 text-center">
+        <div className="surface-card flex flex-col items-center justify-center border-dashed py-12 text-center">
           <div className="mb-4 rounded-full bg-muted p-4">
             <FolderOpen className="h-8 w-8 text-muted-foreground" />
           </div>

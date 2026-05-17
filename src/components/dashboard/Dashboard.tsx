@@ -3,6 +3,9 @@ import {
   FileText,
   AlertTriangle,
   Clock,
+  CalendarDays,
+  MapPin,
+  UserRound,
 } from "lucide-react";
 import { MetricCard } from "./MetricCard";
 import { RiskMonitor } from "./RiskMonitor";
@@ -102,64 +105,89 @@ export function Dashboard({
               </div>
             </div>
 
-            <div className="divide-y divide-border">
+            <div className="space-y-3 p-3 sm:p-4">
               {cases
                 .filter((c) => c.nextHearing > new Date())
                 .sort(
                   (a, b) => a.nextHearing.getTime() - b.nextHearing.getTime(),
                 )
                 .slice(0, 4)
-                .map((caseItem, index) => (
-                  <div
-                    key={caseItem.id}
-                    className="flex items-center gap-3 p-3 sm:p-4 transition-colors hover:bg-muted/30 animate-fade-in"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <div className="flex h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0 flex-col items-center justify-center rounded-lg bg-accent/10 text-accent-foreground">
-                      <span className="text-[10px] sm:text-xs font-medium">
-                        {caseItem.nextHearing.toLocaleDateString("en-NG", {
-                          month: "short",
-                        })}
-                      </span>
-                      <span className="text-sm sm:text-lg font-bold">
-                        {caseItem.nextHearing.getDate()}
-                      </span>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="font-medium text-foreground text-sm sm:text-base truncate">
-                          {caseItem.suitNumber}
-                        </h4>
-                        <span
-                          className={`status-pill status-${caseItem.proceduralStage.toLowerCase()}`}
-                        >
-                          {caseItem.proceduralStage}
-                        </span>
-                      </div>
-                      <p className="text-xs sm:text-sm text-muted-foreground truncate">
-                        {caseItem.caseTitle}
-                      </p>
-                      <div className="mt-1 flex items-center gap-2 sm:gap-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {caseItem.nextHearing.toLocaleTimeString("en-NG", {
-                            hour: "2-digit",
-                            minute: "2-digit",
+                .map((caseItem, index) => {
+                  const daysAway = Math.ceil(
+                    (caseItem.nextHearing.getTime() - new Date().getTime()) /
+                      (24 * 60 * 60 * 1000),
+                  );
+
+                  return (
+                    <button
+                      key={caseItem.id}
+                      onClick={() => onNavigate?.("calendar")}
+                      className="group grid w-full grid-cols-[auto_1fr] gap-3 rounded-lg border border-border/70 bg-background/60 p-3 text-left shadow-sm transition-all hover:border-accent/60 hover:bg-card hover:shadow-card md:grid-cols-[auto_1fr_auto]"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      <div className="flex h-14 w-14 flex-shrink-0 flex-col items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+                        <span className="text-[10px] font-bold uppercase">
+                          {caseItem.nextHearing.toLocaleDateString("en-NG", {
+                            month: "short",
                           })}
                         </span>
-                        <span className="truncate hidden sm:inline">
-                          {caseItem.court}
+                        <span className="text-xl font-extrabold leading-none">
+                          {caseItem.nextHearing.getDate()}
                         </span>
                       </div>
-                    </div>
-                    <div className="text-right hidden sm:block flex-shrink-0">
-                      <p className="text-sm font-medium text-foreground">
-                        {caseItem.assignedCounsel.split(" ").slice(-1)[0]}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Counsel</p>
-                    </div>
-                  </div>
-                ))}
+
+                      <div className="min-w-0">
+                        <div className="mb-1 flex flex-wrap items-center gap-2">
+                          <h4 className="truncate text-sm font-bold text-foreground sm:text-base">
+                            {caseItem.suitNumber}
+                          </h4>
+                          <span
+                            className={`status-pill status-${caseItem.proceduralStage.toLowerCase()}`}
+                          >
+                            {caseItem.proceduralStage}
+                          </span>
+                        </div>
+                        <p className="line-clamp-1 text-xs font-medium text-muted-foreground sm:text-sm">
+                          {caseItem.caseTitle}
+                        </p>
+                        <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
+                          <span className="flex items-center gap-1.5">
+                            <Clock className="h-3.5 w-3.5" />
+                            {caseItem.nextHearing.toLocaleTimeString("en-NG", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                          <span className="flex min-w-0 items-center gap-1.5">
+                            <MapPin className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">{caseItem.court}</span>
+                          </span>
+                          <span className="flex min-w-0 items-center gap-1.5">
+                            <UserRound className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">{caseItem.assignedCounsel}</span>
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="hidden min-w-[88px] flex-col items-end justify-center md:flex">
+                        <span className="rounded-md bg-accent/15 px-2 py-1 text-xs font-bold text-accent-foreground">
+                          {daysAway <= 1 ? "Due soon" : `${daysAway} days`}
+                        </span>
+                        <span className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
+                          <CalendarDays className="h-3.5 w-3.5" />
+                          Open
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              {cases.filter((c) => c.nextHearing > new Date()).length === 0 && (
+                <div className="rounded-lg border border-dashed border-border p-8 text-center">
+                  <CalendarDays className="mx-auto h-8 w-8 text-muted-foreground" />
+                  <p className="mt-2 text-sm font-medium text-foreground">No upcoming hearings</p>
+                  <p className="text-xs text-muted-foreground">Scheduled hearings will appear here.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

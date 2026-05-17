@@ -131,23 +131,23 @@ export function AuditTrail({ logs }: AuditTrailProps) {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-4">
-        <div className="rounded-xl border border-border bg-card p-4">
+        <div className="elevated-card p-4">
           <p className="text-sm text-muted-foreground">Total Events</p>
           <p className="text-2xl font-bold text-foreground">{logs.length}</p>
         </div>
-        <div className="rounded-xl border border-border bg-card p-4">
+        <div className="elevated-card p-4">
           <p className="text-sm text-muted-foreground">Today</p>
           <p className="text-2xl font-bold text-foreground">
             {logs.filter(l => l.timestamp.toDateString() === new Date().toDateString()).length}
           </p>
         </div>
-        <div className="rounded-xl border border-border bg-card p-4">
+        <div className="elevated-card p-4">
           <p className="text-sm text-muted-foreground">Unique Users</p>
           <p className="text-2xl font-bold text-foreground">
             {new Set(logs.map(l => l.userId)).size}
           </p>
         </div>
-        <div className="rounded-xl border border-border bg-card p-4">
+        <div className="elevated-card p-4">
           <p className="text-sm text-muted-foreground">Resources Accessed</p>
           <p className="text-2xl font-bold text-foreground">
             {new Set(logs.map(l => l.resourceId)).size}
@@ -199,7 +199,7 @@ export function AuditTrail({ logs }: AuditTrailProps) {
       </div>
 
       {/* Audit Log Table - Desktop */}
-      <div className="hidden overflow-hidden rounded-xl border border-border bg-card lg:block">
+      <div className="surface-card hidden overflow-hidden lg:block">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -289,7 +289,7 @@ export function AuditTrail({ logs }: AuditTrailProps) {
           return (
             <div 
               key={log.id} 
-              className="animate-fade-in rounded-xl border border-border bg-card p-4"
+              className="elevated-card animate-fade-in p-4"
               style={{ animationDelay: `${index * 20}ms` }}
             >
               <div className="mb-3 flex items-start justify-between">
@@ -328,7 +328,7 @@ export function AuditTrail({ logs }: AuditTrailProps) {
         })}
 
         {filteredLogs.length === 0 && (
-          <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-12 text-center">
+          <div className="surface-card flex flex-col items-center justify-center border-dashed py-12 text-center">
             <Filter className="mb-4 h-8 w-8 text-muted-foreground" />
             <h3 className="mb-1 text-lg font-semibold text-foreground">No logs found</h3>
             <p className="text-muted-foreground">

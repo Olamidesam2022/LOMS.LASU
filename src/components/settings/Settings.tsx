@@ -85,7 +85,7 @@ export function Settings({ currentUser }: SettingsProps) {
         {/* Appearance moved to dashboard */}
 
         {/* Notifications */}
-        <div className="rounded-xl border border-border bg-card">
+        <div className="surface-card overflow-hidden">
           <div className="border-b border-border p-4">
             <div className="flex items-center gap-3">
               <div className="rounded-lg bg-info/10 p-2">
@@ -196,7 +196,7 @@ export function Settings({ currentUser }: SettingsProps) {
         </div>
 
         {/* Security */}
-        <div className="rounded-xl border border-border bg-card">
+        <div className="surface-card overflow-hidden">
           <div className="border-b border-border p-4">
             <div className="flex items-center gap-3">
               <div className="rounded-lg bg-destructive/10 p-2">
@@ -247,7 +247,7 @@ export function Settings({ currentUser }: SettingsProps) {
         </div>
 
         {/* System Information */}
-        <div className="rounded-xl border border-border bg-card">
+        <div className="surface-card overflow-hidden">
           <div className="border-b border-border p-4">
             <div className="flex items-center gap-3">
               <div className="rounded-lg bg-success/10 p-2">
@@ -293,7 +293,7 @@ export function Settings({ currentUser }: SettingsProps) {
       </div>
 
       {/* Contact Support */}
-      <div className="rounded-xl border border-border bg-card p-6">
+      <div className="surface-card p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <div className="rounded-lg bg-accent/20 p-3">

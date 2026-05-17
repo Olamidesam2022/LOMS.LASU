@@ -13,18 +13,19 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
     try {
-      const saved = (localStorage.getItem("theme") as Theme) || "light";
-      return saved === "system" ? "light" : saved;
+      const saved = localStorage.getItem("theme") as Theme | null;
+      return saved === "light" || saved === "dark" || saved === "system"
+        ? saved
+        : "system";
     } catch {
-      return "light";
+      return "system";
     }
   });
   const [isDark, setIsDark] = useState(false);
 
-  // Apply initial theme on mount
   useEffect(() => {
     applyTheme(theme);
-  }, []);
+  }, [theme]);
 
   // Listen for system theme changes
   useEffect(() => {
@@ -70,7 +71,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
     localStorage.setItem("theme", newTheme);
-    applyTheme(newTheme);
   };
 
   return (

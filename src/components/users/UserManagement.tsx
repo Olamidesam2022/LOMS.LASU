@@ -63,7 +63,7 @@ export function UserManagement({ users, currentUser, onAddUser, onEditUser, onDe
 
       {/* Role Distribution */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-border bg-card p-4">
+        <div className="elevated-card p-4">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-accent/20 p-2.5">
               <Shield className="h-5 w-5 text-accent-foreground" />
@@ -76,7 +76,7 @@ export function UserManagement({ users, currentUser, onAddUser, onEditUser, onDe
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-border bg-card p-4">
+        <div className="elevated-card p-4">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-info/10 p-2.5">
               <UserIcon className="h-5 w-5 text-info" />
@@ -89,7 +89,7 @@ export function UserManagement({ users, currentUser, onAddUser, onEditUser, onDe
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-border bg-card p-4">
+        <div className="elevated-card p-4">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-success/10 p-2.5">
               <Key className="h-5 w-5 text-success" />
@@ -141,8 +141,8 @@ export function UserManagement({ users, currentUser, onAddUser, onEditUser, onDe
             <div
               key={user.id}
               className={cn(
-                "animate-fade-in rounded-xl border bg-card p-5 transition-all",
-                isCurrentUser ? "border-accent" : "border-border hover:border-accent/50"
+                "elevated-card animate-fade-in p-5",
+                isCurrentUser && "border-accent"
               )}
               style={{ animationDelay: `${index * 50}ms` }}
             >
@@ -215,7 +215,7 @@ export function UserManagement({ users, currentUser, onAddUser, onEditUser, onDe
 
       {/* Empty State */}
       {filteredUsers.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-12 text-center">
+        <div className="surface-card flex flex-col items-center justify-center border-dashed py-12 text-center">
           <div className="mb-4 rounded-full bg-muted p-4">
             <UserIcon className="h-8 w-8 text-muted-foreground" />
           </div>
@@ -227,13 +227,13 @@ export function UserManagement({ users, currentUser, onAddUser, onEditUser, onDe
       )}
 
       {/* Permissions Info */}
-      <div className="rounded-xl border border-border bg-muted/30 p-5">
+      <div className="surface-card bg-muted/30 p-5">
         <h3 className="mb-3 flex items-center gap-2 font-semibold text-foreground">
           <Shield className="h-5 w-5 text-accent" />
           Role Permissions
         </h3>
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-lg bg-card p-4">
+          <div className="elevated-card p-4">
             <h4 className="mb-2 font-medium text-foreground">Administrator</h4>
             <ul className="space-y-1 text-sm text-muted-foreground">
               <li>• Full access to all modules</li>
@@ -242,7 +242,7 @@ export function UserManagement({ users, currentUser, onAddUser, onEditUser, onDe
               <li>• System configuration</li>
             </ul>
           </div>
-          <div className="rounded-lg bg-card p-4">
+          <div className="elevated-card p-4">
             <h4 className="mb-2 font-medium text-foreground">Staff</h4>
             <ul className="space-y-1 text-sm text-muted-foreground">
               <li>• Case management</li>
