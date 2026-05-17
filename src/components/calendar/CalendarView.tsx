@@ -71,6 +71,54 @@ export function CalendarView({ cases, onViewCase }: CalendarViewProps) {
     .sort((a, b) => a.nextHearing.getTime() - b.nextHearing.getTime())
     .slice(0, 5);
 
+  const startOfWeek = (date: Date) => {
+    const next = new Date(date);
+    next.setDate(date.getDate() - date.getDay());
+    next.setHours(0, 0, 0, 0);
+    return next;
+  };
+
+  const visibleWeek = Array.from({ length: 7 }, (_, index) => {
+    const date = startOfWeek(currentDate);
+    date.setDate(date.getDate() + index);
+    return date;
+  });
+
+  const getCasesForDate = (date: Date) =>
+    cases.filter(c => {
+      const hearingDate = c.nextHearing;
+      return (
+        hearingDate.getDate() === date.getDate() &&
+        hearingDate.getMonth() === date.getMonth() &&
+        hearingDate.getFullYear() === date.getFullYear()
+      );
+    });
+
+  const navigateDate = (direction: 'prev' | 'next') => {
+    if (view === 'month') {
+      navigateMonth(direction);
+      return;
+    }
+
+    setCurrentDate(prev => {
+      const next = new Date(prev);
+      next.setDate(prev.getDate() + (direction === 'prev' ? -1 : 1) * (view === 'week' ? 7 : 1));
+      return next;
+    });
+  };
+
+  const headingLabel =
+    view === 'month'
+      ? currentDate.toLocaleDateString('en-NG', { month: 'long', year: 'numeric' })
+      : view === 'week'
+        ? `${visibleWeek[0].toLocaleDateString('en-NG', { month: 'short', day: 'numeric' })} - ${visibleWeek[6].toLocaleDateString('en-NG', { month: 'short', day: 'numeric', year: 'numeric' })}`
+        : currentDate.toLocaleDateString('en-NG', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric',
+          });
+
   return (
     <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6 overflow-hidden">
       {/* Header */}
@@ -102,83 +150,153 @@ export function CalendarView({ cases, onViewCase }: CalendarViewProps) {
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
         {/* Calendar Grid */}
         <div className="lg:col-span-2 overflow-hidden">
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="surface-card overflow-hidden">
             {/* Calendar Header */}
             <div className="flex items-center justify-between border-b border-border p-3 sm:p-4">
               <button
-                onClick={() => navigateMonth('prev')}
+                onClick={() => navigateDate('prev')}
                 className="rounded-lg p-1.5 sm:p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               >
                 <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
               <h3 className="text-sm sm:text-lg font-semibold text-foreground">
-                {currentDate.toLocaleDateString('en-NG', { month: 'long', year: 'numeric' })}
+                {headingLabel}
               </h3>
               <button
-                onClick={() => navigateMonth('next')}
+                onClick={() => navigateDate('next')}
                 className="rounded-lg p-1.5 sm:p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               >
                 <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
             </div>
 
-            {/* Days of Week */}
-            <div className="grid grid-cols-7 border-b border-border">
-              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-                <div key={i} className="p-2 sm:p-3 text-center text-xs sm:text-sm font-medium text-muted-foreground">
-                  {day}
-                </div>
-              ))}
-            </div>
-
-            {/* Calendar Days */}
-            <div className="grid grid-cols-7">
-              {emptyDays.map(i => (
-                <div key={`empty-${i}`} className="min-h-[60px] sm:min-h-[80px] border-b border-r border-border p-1 sm:p-2" />
-              ))}
-              {days.map(day => {
-                const dayCases = getCasesForDay(day);
-                const hasHearing = dayCases.length > 0;
-                
-                return (
-                  <div
-                    key={day}
-                    className={cn(
-                      "min-h-[60px] sm:min-h-[80px] border-b border-r border-border p-1 sm:p-2 transition-colors hover:bg-muted/30",
-                      isToday(day) && "bg-accent/10"
-                    )}
-                  >
-                    <span className={cn(
-                      "inline-flex h-5 w-5 sm:h-7 sm:w-7 items-center justify-center rounded-full text-xs sm:text-sm",
-                      isToday(day) && "bg-accent text-accent-foreground font-bold",
-                      hasHearing && !isToday(day) && "bg-destructive/10 text-destructive font-medium"
-                    )}>
+            {view === 'month' && (
+              <>
+                <div className="grid grid-cols-7 border-b border-border">
+                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+                    <div key={i} className="p-2 sm:p-3 text-center text-xs sm:text-sm font-medium text-muted-foreground">
                       {day}
-                    </span>
-                    {dayCases.slice(0, 1).map((c) => (
-                      <button
-                        key={c.id}
-                        onClick={() => onViewCase(c)}
-                        className="mt-0.5 sm:mt-1 block w-full truncate rounded bg-accent/20 px-1 py-0.5 text-left text-[9px] sm:text-xs font-medium text-accent-foreground hover:bg-accent/30"
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-7">
+                  {emptyDays.map(i => (
+                    <div key={`empty-${i}`} className="min-h-[60px] sm:min-h-[80px] border-b border-r border-border p-1 sm:p-2" />
+                  ))}
+                  {days.map(day => {
+                    const dayCases = getCasesForDay(day);
+                    const hasHearing = dayCases.length > 0;
+
+                    return (
+                      <div
+                        key={day}
+                        className={cn(
+                          "min-h-[60px] sm:min-h-[80px] border-b border-r border-border p-1 sm:p-2 transition-colors hover:bg-muted/30",
+                          isToday(day) && "bg-accent/10"
+                        )}
                       >
-                        {c.suitNumber}
-                      </button>
-                    ))}
-                    {dayCases.length > 1 && (
-                      <span className="mt-0.5 block text-[9px] sm:text-xs text-muted-foreground">
-                        +{dayCases.length - 1} more
-                      </span>
-                    )}
+                        <span className={cn(
+                          "inline-flex h-5 w-5 sm:h-7 sm:w-7 items-center justify-center rounded-full text-xs sm:text-sm",
+                          isToday(day) && "bg-accent text-accent-foreground font-bold",
+                          hasHearing && !isToday(day) && "bg-destructive/10 text-destructive font-medium"
+                        )}>
+                          {day}
+                        </span>
+                        {dayCases.slice(0, 1).map((c) => (
+                          <button
+                            key={c.id}
+                            onClick={() => onViewCase(c)}
+                            className="mt-0.5 sm:mt-1 block w-full truncate rounded bg-accent/20 px-1 py-0.5 text-left text-[9px] sm:text-xs font-medium text-accent-foreground hover:bg-accent/30"
+                          >
+                            {c.suitNumber}
+                          </button>
+                        ))}
+                        {dayCases.length > 1 && (
+                          <span className="mt-0.5 block text-[9px] sm:text-xs text-muted-foreground">
+                            +{dayCases.length - 1} more
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
+            {view === 'week' && (
+              <div className="grid gap-0 sm:grid-cols-7">
+                {visibleWeek.map((date) => {
+                  const dayCases = getCasesForDate(date);
+                  const today = new Date();
+                  const dateIsToday =
+                    date.getDate() === today.getDate() &&
+                    date.getMonth() === today.getMonth() &&
+                    date.getFullYear() === today.getFullYear();
+
+                  return (
+                    <div key={date.toISOString()} className={cn("min-h-[160px] border-b border-r border-border p-3", dateIsToday && "bg-accent/10")}>
+                      <div className="mb-3">
+                        <p className="text-xs font-medium uppercase text-muted-foreground">
+                          {date.toLocaleDateString('en-NG', { weekday: 'short' })}
+                        </p>
+                        <p className="text-lg font-semibold text-foreground">{date.getDate()}</p>
+                      </div>
+                      <div className="space-y-2">
+                        {dayCases.map((caseItem) => (
+                          <button
+                            key={caseItem.id}
+                            onClick={() => onViewCase(caseItem)}
+                            className="w-full rounded-lg bg-accent/15 p-2 text-left text-xs font-medium text-accent-foreground hover:bg-accent/25"
+                          >
+                            <span className="block truncate">{caseItem.suitNumber}</span>
+                            <span className="block truncate text-muted-foreground">{caseItem.caseTitle}</span>
+                          </button>
+                        ))}
+                        {dayCases.length === 0 && (
+                          <p className="text-xs text-muted-foreground">No hearings</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {view === 'day' && (
+              <div className="divide-y divide-border">
+                {getCasesForDate(currentDate).map((caseItem) => (
+                  <button
+                    key={caseItem.id}
+                    onClick={() => onViewCase(caseItem)}
+                    className="flex w-full items-start gap-3 p-4 text-left transition-colors hover:bg-muted/30"
+                  >
+                    <div className="rounded-lg bg-accent/10 px-3 py-2 text-sm font-semibold text-accent-foreground">
+                      {caseItem.nextHearing.toLocaleTimeString('en-NG', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-foreground">{caseItem.suitNumber}</p>
+                      <p className="truncate text-sm text-muted-foreground">{caseItem.caseTitle}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{caseItem.court}</p>
+                    </div>
+                  </button>
+                ))}
+                {getCasesForDate(currentDate).length === 0 && (
+                  <div className="p-8 text-center text-sm text-muted-foreground">
+                    No hearings scheduled for this day
                   </div>
-                );
-              })}
-            </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Upcoming Hearings Sidebar */}
         <div className="space-y-3 sm:space-y-4">
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="surface-card overflow-hidden">
             <div className="border-b border-border p-3 sm:p-4">
               <div className="flex items-center gap-2">
                 <CalendarIcon className="h-4 w-4 sm:h-5 sm:w-5 text-accent-foreground flex-shrink-0" />
@@ -236,7 +354,7 @@ export function CalendarView({ cases, onViewCase }: CalendarViewProps) {
           </div>
 
           {/* Legend */}
-          <div className="rounded-xl border border-border bg-card p-3 sm:p-4">
+          <div className="surface-card p-3 sm:p-4">
             <h4 className="mb-2 sm:mb-3 text-xs sm:text-sm font-medium text-foreground">Legend</h4>
             <div className="space-y-1.5 sm:space-y-2">
               <div className="flex items-center gap-2 text-xs sm:text-sm">

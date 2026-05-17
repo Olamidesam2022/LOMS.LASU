@@ -237,7 +237,7 @@ export function DocumentVault({ documents, onUpload, onViewDocument, onDownloadD
 
       {/* Documents List View */}
       {viewMode === 'list' && (
-        <div className="hidden overflow-hidden rounded-xl border border-border bg-card md:block">
+        <div className="surface-card hidden overflow-hidden md:block">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>

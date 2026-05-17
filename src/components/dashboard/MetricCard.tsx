@@ -24,22 +24,22 @@ export function MetricCard({
   className 
 }: MetricCardProps) {
   const iconStyles = {
-    default: 'bg-primary/10 text-primary',
-    accent: 'bg-accent/20 text-accent-foreground',
-    warning: 'bg-warning/10 text-warning',
-    success: 'bg-success/10 text-success',
+    default: 'bg-primary text-primary-foreground',
+    accent: 'bg-accent text-accent-foreground',
+    warning: 'bg-warning text-warning-foreground',
+    success: 'bg-success text-success-foreground',
   };
 
   return (
     <div className={cn("metric-card animate-fade-in", className)}>
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
-          <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">{title}</p>
-          <div className="mt-1 sm:mt-2 flex items-baseline gap-2 flex-wrap">
-            <p className="text-2xl sm:text-3xl font-bold text-foreground">{value}</p>
+          <p className="text-xs font-bold uppercase text-muted-foreground">{title}</p>
+          <div className="mt-2 flex items-baseline gap-2 flex-wrap">
+            <p className="text-2xl sm:text-3xl font-extrabold text-foreground">{value}</p>
             {trend && (
               <span className={cn(
-                "text-xs sm:text-sm font-medium",
+                "rounded-md px-1.5 py-0.5 text-xs font-bold",
                 trend.isPositive ? "text-success" : "text-destructive"
               )}>
                 {trend.isPositive ? '+' : ''}{trend.value}%
@@ -47,10 +47,10 @@ export function MetricCard({
             )}
           </div>
           {subtitle && (
-            <p className="mt-1 text-xs sm:text-sm text-muted-foreground truncate">{subtitle}</p>
+            <p className="mt-1 text-xs sm:text-sm font-medium text-muted-foreground truncate">{subtitle}</p>
           )}
         </div>
-        <div className={cn("rounded-lg sm:rounded-xl p-2 sm:p-3 flex-shrink-0", iconStyles[variant])}>
+        <div className={cn("rounded-lg p-2.5 shadow-sm flex-shrink-0", iconStyles[variant])}>
           <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
         </div>
       </div>

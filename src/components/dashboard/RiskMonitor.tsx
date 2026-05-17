@@ -29,7 +29,7 @@ export function RiskMonitor({ cases }: RiskMonitorProps) {
 
   if (urgentCases.length === 0) {
     return (
-      <div className="rounded-xl border border-border bg-card p-6">
+      <div className="surface-card p-6">
         <div className="flex items-center gap-3 text-success">
           <div className="rounded-lg bg-success/10 p-2">
             <Clock className="h-5 w-5" />

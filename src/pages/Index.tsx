@@ -335,7 +335,7 @@ const Index = () => {
           onSidebarToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
           sidebarCollapsed={sidebarCollapsed}
         />
-        <main className="flex-1 overflow-y-auto overflow-x-hidden">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[linear-gradient(180deg,hsl(214_32%_98%),hsl(214_32%_96%))]">
           {renderView()}
         </main>
       </div>

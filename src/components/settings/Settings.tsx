@@ -215,9 +215,11 @@ export function Settings({ currentUser }: SettingsProps) {
               <div className="flex items-center justify-between">
                 <p className="font-medium text-foreground">Current Role</p>
                 <span className="rounded-full bg-accent/20 px-3 py-1 text-xs font-medium text-accent-foreground">
-                  {currentUser.role === "admin"
-                    ? "Administrator"
-                    : "Legal Officer"}
+                  {currentUser.role === "superadmin"
+                    ? "Superadmin"
+                    : currentUser.role === "admin"
+                      ? "Administrator"
+                      : "Staff"}
                 </span>
               </div>
             </div>

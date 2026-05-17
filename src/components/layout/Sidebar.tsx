@@ -135,7 +135,7 @@ export function Sidebar({
         )}
       >
         {/* Header */}
-        <div className="flex h-20 items-center justify-between border-b border-sidebar-border px-4">
+        <div className="flex h-20 items-center justify-between border-b border-sidebar-border/80 px-4">
           {/* Mobile close button */}
           <button
             onClick={onClose}
@@ -146,21 +146,21 @@ export function Sidebar({
 
           {(!collapsed || isOpen) && (
             <div className="flex items-center gap-3 animate-fade-in">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent shadow-gold">
                 <Shield className="h-6 w-6 text-accent-foreground" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-sidebar-foreground">
+                <h1 className="text-lg font-extrabold text-sidebar-foreground">
                   LASU Legal
                 </h1>
-                <p className="text-xs text-sidebar-foreground/60">
+                <p className="text-xs font-medium text-sidebar-foreground/60">
                   Case Management
                 </p>
               </div>
             </div>
           )}
           {collapsed && !isOpen && (
-            <div className="mx-auto hidden h-10 w-10 items-center justify-center rounded-lg bg-accent md:flex">
+            <div className="mx-auto hidden h-10 w-10 items-center justify-center rounded-lg bg-accent shadow-gold md:flex">
               <Shield className="h-6 w-6 text-accent-foreground" />
             </div>
           )}
@@ -202,7 +202,7 @@ export function Sidebar({
           {/* User Info */}
           <div
             className={cn(
-              "mb-4 flex items-center gap-3 rounded-lg bg-sidebar-accent/50 p-3 transition-all duration-300",
+              "mb-4 flex items-center gap-3 rounded-lg border border-white/[0.06] bg-white/[0.06] p-3 transition-all duration-300",
               collapsed && !isOpen && "md:justify-center",
             )}
           >

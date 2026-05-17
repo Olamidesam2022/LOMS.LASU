@@ -34,7 +34,7 @@ export function RecentActivity({ logs, onViewAll }: RecentActivityProps) {
   };
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
+    <div className="surface-card overflow-hidden">
       <div className="border-b border-border p-3 sm:p-4">
         <h3 className="font-semibold text-foreground text-sm sm:text-base">Recent Activity</h3>
         <p className="text-xs sm:text-sm text-muted-foreground">Latest system actions</p>
@@ -75,14 +75,16 @@ export function RecentActivity({ logs, onViewAll }: RecentActivityProps) {
         })}
       </div>
 
-      <div className="border-t border-border p-2 sm:p-3">
-        <button 
-          onClick={onViewAll}
-          className="w-full rounded-lg py-2 text-xs sm:text-sm font-medium text-accent transition-colors hover:bg-muted"
-        >
-          View All Activity
-        </button>
-      </div>
+      {onViewAll && (
+        <div className="border-t border-border p-2 sm:p-3">
+          <button
+            onClick={onViewAll}
+            className="w-full rounded-lg py-2 text-xs sm:text-sm font-medium text-accent transition-colors hover:bg-muted"
+          >
+            View All Activity
+          </button>
+        </div>
+      )}
     </div>
   );
 }

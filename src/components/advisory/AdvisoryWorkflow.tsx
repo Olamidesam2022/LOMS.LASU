@@ -117,7 +117,7 @@ export function AdvisoryWorkflow({ requests, onAddRequest, onViewRequest }: Advi
           const { icon: StatusIcon, color, bgColor } = statusConfig[status];
           
           return (
-            <div key={status} className="rounded-xl border border-border bg-card overflow-hidden">
+            <div key={status} className="surface-card overflow-hidden">
               {/* Column Header */}
               <div className={cn("flex items-center gap-2 border-b border-border p-3 sm:p-4", bgColor)}>
                 <StatusIcon className={cn("h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0", color, status === 'In Progress' && "animate-spin")} />

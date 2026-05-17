@@ -127,7 +127,7 @@ export function LitigationRegistry({ cases, onAddCase, onViewCase, onEditCase, o
       )}
 
       {/* Cases Table - Desktop */}
-      <div className="hidden overflow-hidden rounded-xl border border-border bg-card md:block">
+      <div className="surface-card hidden overflow-hidden md:block">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -212,7 +212,7 @@ export function LitigationRegistry({ cases, onAddCase, onViewCase, onEditCase, o
         {filteredCases.map((caseItem, index) => (
           <div 
             key={caseItem.id} 
-            className="animate-fade-in rounded-xl border border-border bg-card p-4"
+            className="surface-card animate-fade-in p-4"
             style={{ animationDelay: `${index * 30}ms` }}
           >
             <div className="mb-3 flex items-start justify-between">

@@ -79,7 +79,7 @@ export function Header({
   };
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-30 border-b border-border/70 bg-background/90 shadow-sm backdrop-blur-xl supports-[backdrop-filter]:bg-background/75">
       <div className="flex h-16 items-center justify-between px-3 sm:px-4 md:px-6">
         <div className="flex items-center gap-2 sm:gap-4">
           <button
@@ -104,8 +104,8 @@ export function Header({
             </button>
           )}
 
-          <div>
-            <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+          <div className="min-w-0">
+            <h2 className="truncate text-lg sm:text-xl font-bold text-foreground">
               {title}
             </h2>
             <p className="text-xs sm:text-sm text-muted-foreground">
@@ -127,7 +127,7 @@ export function Header({
               placeholder="Search cases, documents..."
               value={searchQuery}
               onChange={handleSearchChange}
-              className="search-input w-56 lg:w-64 pl-10"
+              className="search-input w-56 lg:w-72 pl-10"
             />
           </div>
 
@@ -146,7 +146,7 @@ export function Header({
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 top-full mt-2 w-80 rounded-xl border border-border bg-card shadow-lg animate-fade-in z-50">
+              <div className="absolute right-0 top-full mt-2 w-80 overflow-hidden rounded-lg border border-border bg-card shadow-card animate-fade-in z-50">
                 <div className="flex items-center justify-between border-b border-border p-3">
                   <h3 className="font-semibold text-foreground">
                     Notifications
@@ -217,7 +217,7 @@ export function Header({
 
           <ThemeToggle />
 
-          <div className="hidden items-center gap-2 sm:gap-3 rounded-lg bg-muted/50 px-2 sm:px-3 py-2 sm:flex">
+          <div className="hidden items-center gap-2 sm:gap-3 rounded-lg border border-border/70 bg-card px-2 sm:px-3 py-2 shadow-sm sm:flex">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-sm font-bold text-accent-foreground">
               {currentUser.name
                 .split(" ")

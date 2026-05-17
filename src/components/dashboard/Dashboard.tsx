@@ -15,6 +15,7 @@ import {
 } from "@/types/legal";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePendingApprovals } from "@/hooks/usePendingApprovals";
+import { toast } from "sonner";
 
 interface DashboardProps {
   metrics: DashboardMetrics;
@@ -45,6 +46,7 @@ export function Dashboard({
   const urgentAdvisory = advisoryRequests.filter(
     (r) => r.status === "Urgent",
   ).length;
+  const canViewAudit = role === "superadmin" || role === "admin";
 
   return (
     <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6 overflow-hidden">
@@ -80,7 +82,7 @@ export function Dashboard({
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
         {/* Upcoming Hearings */}
         <div className="lg:col-span-2 overflow-hidden">
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="surface-card overflow-hidden">
             <div className="border-b border-border p-3 sm:p-4">
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
@@ -165,19 +167,19 @@ export function Dashboard({
         {/* Recent Activity */}
         <RecentActivity
           logs={auditLogs}
-          onViewAll={() => onNavigate?.("audit")}
+          onViewAll={canViewAudit ? () => onNavigate?.("audit") : undefined}
         />
       </div>
 
       {role === "superadmin" && (
-        <div className="rounded-xl border border-border bg-card p-4 sm:p-5 overflow-hidden mt-4">
+        <div className="surface-card p-4 sm:p-5 overflow-hidden mt-4">
           <div className="mb-3 flex items-center justify-between gap-3">
             <h3 className="font-semibold text-foreground">
               Pending User Approvals
             </h3>
             <button
               onClick={() => fetchPendingUsers()}
-              className="rounded-lg bg-muted px-3 py-1 text-sm font-medium text-foreground border border-border"
+              className="toolbar-button px-3 py-1"
               disabled={isLoading}
             >
               {isLoading ? "Refreshing..." : "Refresh"}
@@ -194,7 +196,7 @@ export function Dashboard({
               {pendingUsers.map((u) => (
                 <div
                   key={u.id}
-                  className="flex items-center justify-between gap-3"
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-background/60 p-3"
                 >
                   <div>
                     <p className="font-medium text-foreground">{u.name}</p>
@@ -207,8 +209,10 @@ export function Dashboard({
                       onClick={async () => {
                         try {
                           await updatePendingUser(u, { status: "approved" });
+                          toast.success(`${u.name} approved`);
                         } catch (e) {
                           console.error(e);
+                          toast.error("Could not approve user");
                         }
                       }}
                       className="rounded-lg bg-accent px-3 py-1 text-sm font-medium text-accent-foreground"
@@ -219,8 +223,10 @@ export function Dashboard({
                       onClick={async () => {
                         try {
                           await updatePendingUser(u, { status: "rejected" });
+                          toast.success(`${u.name} rejected`);
                         } catch (e) {
                           console.error(e);
+                          toast.error("Could not reject user");
                         }
                       }}
                       className="rounded-lg bg-muted px-3 py-1 text-sm font-medium text-foreground border border-border"
