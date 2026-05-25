@@ -176,8 +176,6 @@ export default function Login() {
             Protected under NDPR 2019 guidelines
           </p>
         </div>
-
-        </div>
       </div>
     </div>
   );

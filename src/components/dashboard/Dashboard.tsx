@@ -54,7 +54,7 @@ export function Dashboard({
   return (
     <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6 overflow-hidden">
       {/* Metrics Grid */}
-      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 md:grid-cols-3">
         <MetricCard
           title="Active Litigation"
           value={metrics.activeLitigation}
