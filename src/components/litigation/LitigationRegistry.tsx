@@ -208,63 +208,52 @@ export function LitigationRegistry({ cases, onAddCase, onViewCase, onEditCase, o
       </div>
 
       {/* Cases Cards - Mobile */}
-      <div className="space-y-3 md:hidden">
+      <div className="clean-list md:hidden">
         {filteredCases.map((caseItem, index) => (
-          <div 
+          <div
             key={caseItem.id} 
-            className="surface-card animate-fade-in p-4"
+            className="clean-list-row animate-fade-in grid-cols-[1fr_auto]"
             style={{ animationDelay: `${index * 30}ms` }}
           >
-            <div className="mb-3 flex items-start justify-between">
-              <div>
-                <span className="font-semibold text-foreground">{caseItem.suitNumber}</span>
-                <span className={`status-pill ${stageColors[caseItem.proceduralStage]} ml-2`}>
+            <div className="min-w-0">
+              <div className="mb-1 flex flex-wrap items-center gap-2">
+                <span className="font-bold text-foreground">{caseItem.suitNumber}</span>
+                <span className={`status-pill ${stageColors[caseItem.proceduralStage]}`}>
                   {caseItem.proceduralStage}
                 </span>
               </div>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => onViewCase?.(caseItem)}
-                  className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted"
-                >
-                  <Eye className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => onEditCase?.(caseItem)}
-                  className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted"
-                >
-                  <Edit className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => onDeleteCase?.(caseItem)}
-                  className="rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+              <h4 className="truncate text-sm font-semibold text-foreground">{caseItem.caseTitle}</h4>
+              <p className="truncate text-xs text-muted-foreground">vs. {caseItem.adversaryParty}</p>
+              <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <User className="h-3.5 w-3.5" />
+                  <span>{caseItem.assignedCounsel.split(' ').slice(-1)[0]}</span>
+                </div>
+                <div className="flex min-w-0 items-center gap-1">
+                  <MapPin className="h-3.5 w-3.5" />
+                  <span className="truncate">{caseItem.court}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-3.5 w-3.5" />
+                  <span>
+                    {caseItem.nextHearing.toLocaleDateString('en-NG', {
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </span>
+                </div>
               </div>
             </div>
-            
-            <h4 className="mb-1 font-medium text-foreground">{caseItem.caseTitle}</h4>
-            <p className="mb-3 text-sm text-muted-foreground">vs. {caseItem.adversaryParty}</p>
-            
-            <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <User className="h-4 w-4" />
-                <span>{caseItem.assignedCounsel.split(' ').slice(-1)[0]}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <MapPin className="h-4 w-4" />
-                <span>{caseItem.court}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Calendar className="h-4 w-4" />
-                <span>
-                  {caseItem.nextHearing.toLocaleDateString('en-NG', {
-                    month: 'short',
-                    day: 'numeric',
-                  })}
-                </span>
-              </div>
+            <div className="flex items-center gap-1">
+              <button onClick={() => onViewCase?.(caseItem)} className="icon-button">
+                <Eye className="h-4 w-4" />
+              </button>
+              <button onClick={() => onEditCase?.(caseItem)} className="icon-button">
+                <Edit className="h-4 w-4" />
+              </button>
+              <button onClick={() => onDeleteCase?.(caseItem)} className="icon-button hover:bg-destructive/10 hover:text-destructive">
+                <Trash2 className="h-4 w-4" />
+              </button>
             </div>
           </div>
         ))}

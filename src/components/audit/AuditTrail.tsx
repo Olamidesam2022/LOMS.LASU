@@ -281,7 +281,7 @@ export function AuditTrail({ logs }: AuditTrailProps) {
       </div>
 
       {/* Audit Log Cards - Mobile/Tablet */}
-      <div className="space-y-3 lg:hidden">
+      <div className="clean-list lg:hidden">
         {filteredLogs.map((log, index) => {
           const ActionIcon = actionIcons[log.action] || Eye;
           const ResourceIcon = resourceIcons[log.resource] || FileText;
@@ -289,10 +289,10 @@ export function AuditTrail({ logs }: AuditTrailProps) {
           return (
             <div 
               key={log.id} 
-              className="elevated-card animate-fade-in p-4"
+              className="clean-list-row animate-fade-in"
               style={{ animationDelay: `${index * 20}ms` }}
             >
-              <div className="mb-3 flex items-start justify-between">
+              <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-bold text-foreground">
                     {log.userName.split(' ').map(n => n[0]).join('').slice(0, 2)}
@@ -305,14 +305,14 @@ export function AuditTrail({ logs }: AuditTrailProps) {
                 </span>
               </div>
               
-              <div className="mb-3 flex items-center gap-2 text-sm">
+              <div className="flex items-center gap-2 text-sm">
                 <ResourceIcon className="h-4 w-4 text-muted-foreground" />
                 <span className="text-foreground">{log.resource}</span>
                 <span className="text-muted-foreground">•</span>
                 <span className="truncate text-muted-foreground">{log.resourceId}</span>
               </div>
 
-              <p className="mb-3 text-sm text-muted-foreground">{log.details}</p>
+              <p className="text-sm text-muted-foreground">{log.details}</p>
 
               <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1">

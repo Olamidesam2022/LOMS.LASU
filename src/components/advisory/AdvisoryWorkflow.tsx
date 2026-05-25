@@ -128,31 +128,31 @@ export function AdvisoryWorkflow({ requests, onAddRequest, onViewRequest }: Advi
               </div>
 
               {/* Column Content */}
-              <div className="max-h-[50vh] sm:max-h-[60vh] space-y-2 sm:space-y-3 overflow-y-auto p-2 sm:p-3 scrollbar-thin">
+              <div className="clean-list max-h-[50vh] overflow-y-auto border-y-0 scrollbar-thin sm:max-h-[60vh]">
                 {items.map((request, index) => {
                   const daysRemaining = getDaysRemaining(request.dueDate);
                   
                   return (
-                    <div
+                    <button
                       key={request.id}
                       onClick={() => onViewRequest?.(request)}
-                      className="animate-fade-in cursor-pointer rounded-lg border border-border bg-background p-2 sm:p-3 transition-all hover:border-accent/50 hover:shadow-md overflow-hidden"
+                      className="clean-list-row animate-fade-in"
                       style={{ animationDelay: `${index * 50}ms` }}
                     >
-                      <div className="mb-2 flex items-start justify-between gap-2">
-                        <span className="text-[10px] sm:text-xs font-medium text-muted-foreground truncate">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="truncate text-xs font-bold text-muted-foreground">
                           {request.requestNumber}
                         </span>
-                        <span className={cn("status-pill text-[10px] sm:text-xs flex-shrink-0", priorityColors[request.priority])}>
+                        <span className={cn("status-pill flex-shrink-0", priorityColors[request.priority])}>
                           {request.priority}
                         </span>
                       </div>
                       
-                      <h4 className="mb-2 line-clamp-2 text-xs sm:text-sm font-medium text-foreground">
+                      <h4 className="line-clamp-2 text-sm font-semibold text-foreground">
                         {request.title}
                       </h4>
                       
-                      <div className="space-y-1 text-[10px] sm:text-xs text-muted-foreground">
+                      <div className="grid gap-1 text-xs text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Building2 className="h-3 w-3 flex-shrink-0" />
                           <span className="truncate">{request.department}</span>
@@ -179,14 +179,14 @@ export function AdvisoryWorkflow({ requests, onAddRequest, onViewRequest }: Advi
                       </div>
 
                       {request.assignedTo && (
-                        <div className="mt-2 sm:mt-3 flex items-center justify-between border-t border-border pt-2">
-                          <span className="text-[10px] sm:text-xs text-muted-foreground truncate">
+                        <div className="flex items-center justify-between pt-1">
+                          <span className="truncate text-xs text-muted-foreground">
                             {request.assignedTo.split(' ').slice(-1)[0]}
                           </span>
                           <ArrowRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                         </div>
                       )}
-                    </div>
+                    </button>
                   );
                 })}
 

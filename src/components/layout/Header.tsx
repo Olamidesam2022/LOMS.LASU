@@ -154,7 +154,7 @@ export function Header({
                   {unreadCount > 0 && (
                     <button
                       onClick={() => markAllAsRead().catch(console.error)}
-                      className="text-xs text-accent hover:underline"
+                      className="text-xs font-semibold text-primary hover:underline"
                     >
                       Mark all read
                     </button>
@@ -177,7 +177,7 @@ export function Header({
                           }
                           className={cn(
                             "flex gap-3 p-3 cursor-pointer transition-colors hover:bg-muted/50 border-b border-border last:border-0",
-                            !notification.read && "bg-accent/5",
+                            !notification.read && "bg-primary/5",
                           )}
                         >
                           <div
@@ -194,7 +194,7 @@ export function Header({
                                 {notification.type}
                               </p>
                               {!notification.read && (
-                                <span className="h-2 w-2 rounded-full bg-accent flex-shrink-0" />
+                                <span className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
                               )}
                             </div>
                             <p className="text-xs text-muted-foreground truncate">
@@ -218,7 +218,7 @@ export function Header({
           <ThemeToggle />
 
           <div className="hidden items-center gap-2 sm:gap-3 rounded-lg border border-border/70 bg-card px-2 sm:px-3 py-2 shadow-sm sm:flex">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-sm font-bold text-accent-foreground">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
               {currentUser.name
                 .split(" ")
                 .map((n) => n[0])

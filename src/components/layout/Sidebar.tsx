@@ -146,8 +146,8 @@ export function Sidebar({
 
           {(!collapsed || isOpen) && (
             <div className="flex items-center gap-3 animate-fade-in">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent shadow-gold">
-                <Shield className="h-6 w-6 text-accent-foreground" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-card">
+                <Shield className="h-6 w-6 text-primary" />
               </div>
               <div>
                 <h1 className="text-lg font-extrabold text-sidebar-foreground">
@@ -160,8 +160,8 @@ export function Sidebar({
             </div>
           )}
           {collapsed && !isOpen && (
-            <div className="mx-auto hidden h-10 w-10 items-center justify-center rounded-lg bg-accent shadow-gold md:flex">
-              <Shield className="h-6 w-6 text-accent-foreground" />
+            <div className="mx-auto hidden h-10 w-10 items-center justify-center rounded-lg border border-border bg-card md:flex">
+              <Shield className="h-6 w-6 text-primary" />
             </div>
           )}
         </div>
@@ -202,11 +202,11 @@ export function Sidebar({
           {/* User Info */}
           <div
             className={cn(
-              "mb-4 flex items-center gap-3 rounded-lg border border-white/[0.06] bg-white/[0.06] p-3 transition-all duration-300",
+              "mb-4 flex items-center gap-3 rounded-lg border border-border bg-muted/50 p-3 transition-all duration-300",
               collapsed && !isOpen && "md:justify-center",
             )}
           >
-            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-accent text-sm font-bold text-accent-foreground">
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
               {currentUser.name
                 .split(" ")
                 .map((n) => n[0])

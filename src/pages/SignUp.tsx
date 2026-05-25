@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import { Shield, UserPlus } from "lucide-react";
+import { ArrowLeft, UserPlus } from "lucide-react";
 
 export default function SignUp() {
   const [fullName, setFullName] = useState("");
@@ -37,22 +37,26 @@ export default function SignUp() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[linear-gradient(135deg,hsl(224_46%_13%),hsl(213_33%_20%)_45%,hsl(45_93%_58%_/_0.22))] p-4">
-      <div className="w-full max-w-md animate-fade-in">
-        <div className="mb-6 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-lg bg-accent shadow-gold">
-            <Shield className="h-8 w-8 text-accent-foreground" />
-          </div>
-          <h1 className="text-2xl font-extrabold text-white">Request Access</h1>
-          <p className="mt-1 text-sm text-white/70">Create your LASU Legal CMS account</p>
-        </div>
+    <div className="min-h-screen bg-background px-4 py-6 sm:px-6">
+      <Link
+        to="/"
+        className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-primary hover:underline"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to Home
+      </Link>
 
-      <div className="rounded-lg border border-white/15 bg-card p-6 shadow-2xl">
-        <h2 className="mb-4 flex items-center gap-2 text-xl font-bold text-foreground">
-          <UserPlus className="h-5 w-5 text-accent-foreground" />
-          Account details
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-[26.25rem] items-center">
+        <div className="surface-card w-full p-5 sm:p-8">
+          <div className="mb-6 text-center">
+            <h1 className="text-2xl font-extrabold text-foreground">Request Access</h1>
+            <p className="mt-2 text-sm text-muted-foreground">Create your LASU Legal CMS account</p>
+          </div>
+          <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-foreground">
+            <UserPlus className="h-5 w-5 text-primary" />
+            Account details
+          </h2>
+          <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="mb-1 block text-sm font-semibold text-muted-foreground">
               Full name
@@ -106,15 +110,18 @@ export default function SignUp() {
           <button
             type="submit"
             disabled={loading}
-            className="gold-button flex w-full items-center justify-center rounded-lg px-4 py-2.5"
+            className="gold-button flex min-h-11 w-full items-center justify-center rounded-lg px-4 py-2.5"
           >
             {loading ? "Creating..." : "Create account"}
           </button>
         </form>
-      </div>
-      <p className="mt-4 text-center text-xs text-white/60">
-        Your account remains pending until a superadmin approves it.
-      </p>
+          <p className="mt-5 text-center text-sm text-muted-foreground">
+            Already have an account?{" "}
+            <Link to="/login" className="font-semibold text-primary hover:underline">
+              Login
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

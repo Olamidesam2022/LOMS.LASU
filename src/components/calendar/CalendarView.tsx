@@ -150,7 +150,7 @@ export function CalendarView({ cases, onViewCase }: CalendarViewProps) {
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
         {/* Calendar Grid */}
         <div className="lg:col-span-2 overflow-hidden">
-          <div className="surface-card overflow-hidden">
+          <div className="surface-panel overflow-hidden">
             {/* Calendar Header */}
             <div className="flex items-center justify-between border-b border-border p-3 sm:p-4">
               <button
@@ -192,13 +192,13 @@ export function CalendarView({ cases, onViewCase }: CalendarViewProps) {
                       <div
                         key={day}
                         className={cn(
-                          "min-h-[60px] sm:min-h-[80px] border-b border-r border-border p-1 sm:p-2 transition-colors hover:bg-muted/30",
-                          isToday(day) && "bg-accent/10"
+                          "min-h-[60px] sm:min-h-[80px] border-b border-r border-border p-1 sm:p-2 transition-colors hover:bg-muted/50",
+                          isToday(day) && "bg-primary/5"
                         )}
                       >
                         <span className={cn(
                           "inline-flex h-5 w-5 sm:h-7 sm:w-7 items-center justify-center rounded-full text-xs sm:text-sm",
-                          isToday(day) && "bg-accent text-accent-foreground font-bold",
+                          isToday(day) && "bg-primary text-primary-foreground font-bold",
                           hasHearing && !isToday(day) && "bg-destructive/10 text-destructive font-medium"
                         )}>
                           {day}
@@ -207,7 +207,7 @@ export function CalendarView({ cases, onViewCase }: CalendarViewProps) {
                           <button
                             key={c.id}
                             onClick={() => onViewCase(c)}
-                            className="mt-0.5 sm:mt-1 block w-full truncate rounded bg-accent/20 px-1 py-0.5 text-left text-[9px] sm:text-xs font-medium text-accent-foreground hover:bg-accent/30"
+                            className="mt-0.5 sm:mt-1 block w-full truncate rounded border-l-2 border-primary bg-primary/5 px-1 py-0.5 text-left text-[9px] font-semibold text-primary hover:bg-primary/10 sm:text-xs"
                           >
                             {c.suitNumber}
                           </button>
@@ -235,7 +235,7 @@ export function CalendarView({ cases, onViewCase }: CalendarViewProps) {
                     date.getFullYear() === today.getFullYear();
 
                   return (
-                    <div key={date.toISOString()} className={cn("min-h-[160px] border-b border-r border-border p-3", dateIsToday && "bg-accent/10")}>
+                    <div key={date.toISOString()} className={cn("min-h-[160px] border-b border-r border-border p-3", dateIsToday && "bg-primary/5")}>
                       <div className="mb-3">
                         <p className="text-xs font-medium uppercase text-muted-foreground">
                           {date.toLocaleDateString('en-NG', { weekday: 'short' })}
@@ -247,7 +247,7 @@ export function CalendarView({ cases, onViewCase }: CalendarViewProps) {
                           <button
                             key={caseItem.id}
                             onClick={() => onViewCase(caseItem)}
-                            className="w-full rounded-lg bg-accent/15 p-2 text-left text-xs font-medium text-accent-foreground hover:bg-accent/25"
+                            className="w-full border-l-2 border-primary bg-primary/5 p-2 text-left text-xs font-semibold text-primary hover:bg-primary/10"
                           >
                             <span className="block truncate">{caseItem.suitNumber}</span>
                             <span className="block truncate text-muted-foreground">{caseItem.caseTitle}</span>
@@ -271,7 +271,7 @@ export function CalendarView({ cases, onViewCase }: CalendarViewProps) {
                     onClick={() => onViewCase(caseItem)}
                     className="flex w-full items-start gap-3 p-4 text-left transition-colors hover:bg-muted/30"
                   >
-                    <div className="rounded-lg bg-accent/10 px-3 py-2 text-sm font-semibold text-accent-foreground">
+                    <div className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-semibold text-foreground">
                       {caseItem.nextHearing.toLocaleTimeString('en-NG', {
                         hour: '2-digit',
                         minute: '2-digit',
@@ -296,50 +296,48 @@ export function CalendarView({ cases, onViewCase }: CalendarViewProps) {
 
         {/* Upcoming Hearings Sidebar */}
         <div className="space-y-3 sm:space-y-4">
-          <div className="surface-card overflow-hidden">
-            <div className="border-b border-border p-3 sm:p-4">
+          <div className="surface-panel">
+            <div className="border-b border-border px-3 py-3 sm:px-4">
               <div className="flex items-center gap-2">
-                <CalendarIcon className="h-4 w-4 sm:h-5 sm:w-5 text-accent-foreground flex-shrink-0" />
+                <CalendarIcon className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
                 <h3 className="font-semibold text-foreground text-sm sm:text-base">Upcoming Hearings</h3>
               </div>
             </div>
-            <div className="divide-y divide-border max-h-[40vh] sm:max-h-[50vh] overflow-y-auto scrollbar-thin">
+            <div className="clean-list max-h-[40vh] overflow-y-auto border-y-0 scrollbar-thin sm:max-h-[50vh]">
               {upcomingHearings.map((caseItem, index) => (
                 <button
                   key={caseItem.id}
                   onClick={() => onViewCase(caseItem)}
-                  className="w-full p-3 sm:p-4 text-left transition-colors hover:bg-muted/30 animate-fade-in"
+                  className="clean-list-row grid-cols-[auto_1fr]"
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  <div className="flex items-start gap-2 sm:gap-3">
-                    <div className="flex h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 flex-col items-center justify-center rounded-lg bg-accent/10 text-accent-foreground">
-                      <span className="text-[8px] sm:text-[10px] font-medium">
-                        {caseItem.nextHearing.toLocaleDateString('en-NG', { month: 'short' })}
+                  <div className="flex h-10 w-10 flex-shrink-0 flex-col items-center justify-center rounded-lg border border-border bg-background">
+                    <span className="text-[0.6rem] font-bold uppercase text-muted-foreground">
+                      {caseItem.nextHearing.toLocaleDateString('en-NG', { month: 'short' })}
+                    </span>
+                    <span className="text-sm font-extrabold text-foreground">
+                      {caseItem.nextHearing.getDate()}
+                    </span>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold text-foreground">
+                      {caseItem.suitNumber}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {caseItem.caseTitle}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {caseItem.nextHearing.toLocaleTimeString('en-NG', {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
                       </span>
-                      <span className="text-xs sm:text-sm font-bold">
-                        {caseItem.nextHearing.getDate()}
+                      <span className="flex min-w-0 items-center gap-1">
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{caseItem.court.split(' ').slice(0, 2).join(' ')}</span>
                       </span>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-foreground text-xs sm:text-sm">
-                        {caseItem.suitNumber}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {caseItem.caseTitle}
-                      </p>
-                      <div className="mt-1 flex flex-wrap gap-2 text-[10px] sm:text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                          {caseItem.nextHearing.toLocaleTimeString('en-NG', {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MapPin className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                          <span className="truncate max-w-[80px] sm:max-w-none">{caseItem.court.split(' ').slice(0, 2).join(' ')}</span>
-                        </span>
-                      </div>
                     </div>
                   </div>
                 </button>
@@ -354,11 +352,11 @@ export function CalendarView({ cases, onViewCase }: CalendarViewProps) {
           </div>
 
           {/* Legend */}
-          <div className="surface-card p-3 sm:p-4">
+          <div className="surface-panel p-3 sm:p-4">
             <h4 className="mb-2 sm:mb-3 text-xs sm:text-sm font-medium text-foreground">Legend</h4>
             <div className="space-y-1.5 sm:space-y-2">
               <div className="flex items-center gap-2 text-xs sm:text-sm">
-                <span className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-accent flex-shrink-0" />
+                <span className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-primary flex-shrink-0" />
                 <span className="text-muted-foreground">Today</span>
               </div>
               <div className="flex items-center gap-2 text-xs sm:text-sm">
@@ -366,7 +364,7 @@ export function CalendarView({ cases, onViewCase }: CalendarViewProps) {
                 <span className="text-muted-foreground">Has Hearing</span>
               </div>
               <div className="flex items-center gap-2 text-xs sm:text-sm">
-                <span className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded bg-accent/20 flex-shrink-0" />
+                <span className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded bg-primary/20 flex-shrink-0" />
                 <span className="text-muted-foreground">Case Event</span>
               </div>
             </div>

@@ -132,8 +132,14 @@ export function UserManagement({ users, currentUser, onAddUser, onEditUser, onDe
         </div>
       </div>
 
-      {/* Users Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Users List */}
+      <div className="clean-list">
+        <div className="hidden grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_9rem_auto] gap-3 px-4 py-2 text-xs font-bold uppercase text-muted-foreground md:grid">
+          <span>User</span>
+          <span>Department</span>
+          <span>Status</span>
+          <span className="text-right">Actions</span>
+        </div>
         {filteredUsers.map((user, index) => {
           const isCurrentUser = user.id === currentUser.id;
           
@@ -141,67 +147,57 @@ export function UserManagement({ users, currentUser, onAddUser, onEditUser, onDe
             <div
               key={user.id}
               className={cn(
-                "elevated-card animate-fade-in p-5",
-                isCurrentUser && "border-accent"
+                "clean-list-row animate-fade-in md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_9rem_auto] md:items-center",
+                isCurrentUser && "bg-primary/5"
               )}
               style={{ animationDelay: `${index * 50}ms` }}
             >
-              <div className="mb-4 flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent text-lg font-bold text-accent-foreground">
-                    {user.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-foreground">
-                      {user.name}
-                      {isCurrentUser && (
-                        <span className="ml-2 text-xs font-normal text-muted-foreground">(You)</span>
-                      )}
-                    </h4>
-                    <span className={cn("status-pill text-xs", roleStyles[user.role].color)}>
-                      {roleStyles[user.role].label}
-                    </span>
-                    {user.status && (
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        {user.status}
-                      </span>
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+                  {user.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                </div>
+                <div className="min-w-0">
+                  <h4 className="truncate font-bold text-foreground">
+                    {user.name}
+                    {isCurrentUser && (
+                      <span className="ml-2 text-xs font-normal text-muted-foreground">(You)</span>
                     )}
+                  </h4>
+                  <div className="mt-1 flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+                    <Mail className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{user.email}</span>
                   </div>
                 </div>
-                <button
-                  onClick={() => onEditUser?.(user)}
-                  className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                >
-                  <MoreHorizontal className="h-5 w-5" />
-                </button>
               </div>
 
-              <div className="mb-4 space-y-2 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  <span className="truncate">{user.email}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4" />
-                  <span>{user.department}</span>
-                </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Building2 className="h-4 w-4" />
+                <span className="truncate">{user.department}</span>
               </div>
 
-              <div className="flex gap-2 border-t border-border pt-4">
-                <button 
-                  onClick={() => onEditUser?.(user)}
-                  className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-muted py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/80"
-                >
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={cn("status-pill", roleStyles[user.role].color)}>
+                  {roleStyles[user.role].label}
+                </span>
+                {user.status && (
+                  <span className="text-xs text-muted-foreground">{user.status}</span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1 md:justify-end">
+                <button onClick={() => onEditUser?.(user)} className="icon-button">
                   <Edit className="h-4 w-4" />
-                  <span>Edit</span>
                 </button>
-                <button 
+                <button onClick={() => onEditUser?.(user)} className="icon-button">
+                  <MoreHorizontal className="h-4 w-4" />
+                </button>
+                <button
                   onClick={() => onDeactivateUser?.(user)}
                   className={cn(
-                    "rounded-lg p-2 transition-colors",
-                    isCurrentUser 
-                      ? "cursor-not-allowed bg-muted/50 text-muted-foreground/50" 
-                      : "bg-muted text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                    "icon-button",
+                    isCurrentUser
+                      ? "cursor-not-allowed text-muted-foreground/50"
+                      : "hover:bg-destructive/10 hover:text-destructive"
                   )}
                   disabled={isCurrentUser}
                 >

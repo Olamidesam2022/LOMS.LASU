@@ -25,7 +25,7 @@ export function MetricCard({
 }: MetricCardProps) {
   const iconStyles = {
     default: 'bg-primary text-primary-foreground',
-    accent: 'bg-accent text-accent-foreground',
+    accent: 'bg-primary text-primary-foreground',
     warning: 'bg-warning text-warning-foreground',
     success: 'bg-success text-success-foreground',
   };

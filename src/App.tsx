@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import Index from "./pages/Index";
+import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import NotFound from "./pages/NotFound";
@@ -35,7 +36,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/app" replace />;
   }
 
   return <>{children}</>;
@@ -43,6 +44,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 const AppRoutes = () => (
   <Routes>
+    <Route path="/" element={<Landing />} />
     <Route
       path="/login"
       element={
@@ -60,7 +62,7 @@ const AppRoutes = () => (
       }
     />
     <Route
-      path="/"
+      path="/app"
       element={
         <ProtectedRoute>
           <Index />

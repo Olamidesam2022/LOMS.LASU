@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Bell,
   Shield,
@@ -20,13 +20,42 @@ interface SettingsProps {
 }
 
 export function Settings({ currentUser }: SettingsProps) {
+  const storageKey = `lasu-settings-${currentUser.id}`;
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(true);
   const [hearingReminders, setHearingReminders] = useState(true);
   const [deadlineAlerts, setDeadlineAlerts] = useState(true);
   const [showApiKey, setShowApiKey] = useState(false);
 
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (!saved) return;
+      const parsed = JSON.parse(saved) as {
+        emailNotifications?: boolean;
+        pushNotifications?: boolean;
+        hearingReminders?: boolean;
+        deadlineAlerts?: boolean;
+      };
+      setEmailNotifications(parsed.emailNotifications ?? true);
+      setPushNotifications(parsed.pushNotifications ?? true);
+      setHearingReminders(parsed.hearingReminders ?? true);
+      setDeadlineAlerts(parsed.deadlineAlerts ?? true);
+    } catch {
+      localStorage.removeItem(storageKey);
+    }
+  }, [storageKey]);
+
   const handleSave = () => {
+    localStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        emailNotifications,
+        pushNotifications,
+        hearingReminders,
+        deadlineAlerts,
+      }),
+    );
     toast.success("Settings saved successfully");
   };
 
@@ -35,6 +64,15 @@ export function Settings({ currentUser }: SettingsProps) {
     setPushNotifications(true);
     setHearingReminders(true);
     setDeadlineAlerts(true);
+    localStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        emailNotifications: true,
+        pushNotifications: true,
+        hearingReminders: true,
+        deadlineAlerts: true,
+      }),
+    );
     toast.info("Settings reset to defaults");
   };
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Shield, Mail, Lock, LogIn, Eye, EyeOff } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, Eye, EyeOff, Lock, LogIn, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,7 +44,7 @@ export default function Login() {
           title: "Welcome back!",
           description: "You have successfully logged in.",
         });
-        navigate("/");
+        navigate("/app");
       }
     } catch (error: any) {
       toast({
@@ -58,24 +58,23 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[linear-gradient(135deg,hsl(224_46%_13%),hsl(213_33%_20%)_45%,hsl(45_93%_58%_/_0.22))] p-4">
-      <div className="w-full max-w-md animate-fade-in">
-        {/* Logo and Title */}
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-lg bg-accent shadow-gold">
-            <Shield className="h-9 w-9 text-accent-foreground" />
-          </div>
-          <h1 className="text-2xl font-extrabold text-white">LASU Legal CMS</h1>
-          <p className="mt-1 text-white/70">
-            Integrated Case Management System
-          </p>
-        </div>
+    <div className="min-h-screen bg-background px-4 py-6 sm:px-6">
+      <Link
+        to="/"
+        className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-primary hover:underline"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to Home
+      </Link>
 
-        {/* Login Card */}
-        <div className="rounded-lg border border-white/15 bg-card p-6 shadow-2xl">
-          <h2 className="mb-6 text-center text-lg font-semibold text-foreground">
-            Sign in to your account
-          </h2>
+      <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-[26.25rem] items-center">
+        <div className="surface-card w-full p-5 sm:p-8">
+          <div className="mb-7 text-center">
+            <h1 className="text-2xl font-extrabold text-foreground">LASU Legal CMS</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Sign in to continue to your workspace
+            </p>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email Field */}
@@ -127,7 +126,7 @@ export default function Login() {
             <div className="text-right">
               <button
                 type="button"
-                className="text-sm text-accent hover:underline"
+                className="text-sm text-muted-foreground hover:text-primary hover:underline"
                 onClick={() =>
                   toast({
                     title: "Password Reset",
@@ -141,7 +140,7 @@ export default function Login() {
             </div>
 
             {/* Login Button */}
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="min-h-11 w-full" disabled={isLoading}>
               {isLoading ? (
                 <>
                   <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
@@ -162,9 +161,9 @@ export default function Login() {
               Don't have an account?{" "}
               <button
                 onClick={() => navigate("/signup")}
-                className="text-accent hover:underline"
+                className="font-semibold text-primary hover:underline"
               >
-                Create an account
+                Sign up
               </button>{" "}
               - it will await superadmin approval.
             </p>
@@ -178,10 +177,7 @@ export default function Login() {
           </p>
         </div>
 
-        {/* Version */}
-        <p className="mt-4 text-center text-xs text-white/60">
-          Version 1.0.0 - 2024 LASU Legal Unit
-        </p>
+        </div>
       </div>
     </div>
   );

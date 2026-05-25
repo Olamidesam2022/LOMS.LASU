@@ -51,7 +51,7 @@ const statusStyles = {
 export function DocumentVault({ documents, onUpload, onViewDocument, onDownloadDocument, onDeleteDocument }: DocumentVaultProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<DocumentType | 'all'>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
   const filteredDocuments = documents.filter(doc => {
     const matchesSearch = 
@@ -265,84 +265,70 @@ export function DocumentVault({ documents, onUpload, onViewDocument, onDownloadD
 
       {/* Documents List View */}
       {viewMode === 'list' && (
-        <div className="surface-card hidden overflow-hidden md:block">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="table-header">
-                  <th className="px-4 py-3 text-left">Document</th>
-                  <th className="px-4 py-3 text-left">Type</th>
-                  <th className="px-4 py-3 text-left">Version</th>
-                  <th className="px-4 py-3 text-left">Status</th>
-                  <th className="px-4 py-3 text-left">Modified</th>
-                  <th className="px-4 py-3 text-left">Size</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-            <tbody>
-              {filteredDocuments.map((doc, index) => {
-                const Icon = typeIcons[doc.type];
-                
-                return (
-                  <tr
-                    key={doc.id} 
-                    className="table-row animate-fade-in"
-                    style={{ animationDelay: `${index * 20}ms` }}
-                  >
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className={cn("flex h-11 w-11 items-center justify-center rounded-lg shadow-sm", typeColors[doc.type])}>
-                          <Icon className="h-5 w-5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="truncate font-bold text-foreground">{doc.name}</p>
-                          <p className="truncate text-xs text-muted-foreground">Uploaded by {doc.uploadedBy}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className={cn("rounded-md px-2 py-1 text-xs font-semibold", typeColors[doc.type])}>
-                        {doc.type}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4 text-sm font-semibold text-muted-foreground">v{doc.version}</td>
-                    <td className="px-4 py-4">
-                      <span className={cn("status-pill text-xs", statusStyles[doc.status])}>
-                        {doc.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4 text-sm text-muted-foreground">
-                      {doc.lastModified.toLocaleDateString('en-NG')}
-                    </td>
-                    <td className="px-4 py-4 text-sm text-muted-foreground">{doc.size}</td>
-                    <td className="px-4 py-4">
-                      <div className="flex justify-end gap-1">
-                        <button 
-                          onClick={() => onViewDocument?.(doc)}
-                          className="icon-button"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        <button 
-                          onClick={() => onDownloadDocument?.(doc)}
-                          className="icon-button"
-                        >
-                          <Download className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => onDeleteDocument?.(doc)}
-                          className="icon-button hover:bg-destructive/10 hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="clean-list">
+          <div className="hidden grid-cols-[minmax(0,1.8fr)_9rem_7rem_8rem_7rem_auto] gap-3 px-4 py-2 text-xs font-bold uppercase text-muted-foreground lg:grid">
+            <span>Document</span>
+            <span>Type</span>
+            <span>Status</span>
+            <span>Modified</span>
+            <span>Size</span>
+            <span className="text-right">Actions</span>
           </div>
+          {filteredDocuments.map((doc, index) => {
+            const Icon = typeIcons[doc.type];
+
+            return (
+              <div
+                key={doc.id}
+                className="clean-list-row animate-fade-in lg:grid-cols-[minmax(0,1.8fr)_9rem_7rem_8rem_7rem_auto] lg:items-center"
+                style={{ animationDelay: `${index * 20}ms` }}
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-lg", typeColors[doc.type])}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold text-foreground">{doc.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">Uploaded by {doc.uploadedBy} · v{doc.version}</p>
+                  </div>
+                </div>
+
+                <span className={cn("w-fit rounded-md px-2 py-1 text-xs font-semibold", typeColors[doc.type])}>
+                  {doc.type}
+                </span>
+
+                <span className={cn("status-pill w-fit", statusStyles[doc.status])}>
+                  {doc.status}
+                </span>
+
+                <span className="text-xs font-medium text-muted-foreground">
+                  {doc.lastModified.toLocaleDateString('en-NG', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </span>
+
+                <span className="text-xs font-medium text-muted-foreground">{doc.size}</span>
+
+                <div className="flex items-center gap-1 lg:justify-end">
+                  <button onClick={() => onViewDocument?.(doc)} className="icon-button" aria-label={`View ${doc.name}`}>
+                    <Eye className="h-4 w-4" />
+                  </button>
+                  <button onClick={() => onDownloadDocument?.(doc)} className="icon-button" aria-label={`Download ${doc.name}`}>
+                    <Download className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => onDeleteDocument?.(doc)}
+                    className="icon-button hover:bg-destructive/10 hover:text-destructive"
+                    aria-label={`Delete ${doc.name}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 

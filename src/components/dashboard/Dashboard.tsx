@@ -85,8 +85,8 @@ export function Dashboard({
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
         {/* Upcoming Hearings */}
         <div className="lg:col-span-2 overflow-hidden">
-          <div className="surface-card overflow-hidden">
-            <div className="border-b border-border p-3 sm:p-4">
+          <div className="surface-panel">
+            <div className="border-b border-border px-3 py-3 sm:px-4">
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <h3 className="font-semibold text-foreground text-sm sm:text-base">
@@ -105,7 +105,7 @@ export function Dashboard({
               </div>
             </div>
 
-            <div className="space-y-3 p-3 sm:p-4">
+            <div className="clean-list border-y-0">
               {cases
                 .filter((c) => c.nextHearing > new Date())
                 .sort(
@@ -122,16 +122,16 @@ export function Dashboard({
                     <button
                       key={caseItem.id}
                       onClick={() => onNavigate?.("calendar")}
-                      className="group grid w-full grid-cols-[auto_1fr] gap-3 rounded-lg border border-border/70 bg-background/60 p-3 text-left shadow-sm transition-all hover:border-accent/60 hover:bg-card hover:shadow-card md:grid-cols-[auto_1fr_auto]"
+                      className="clean-list-row grid-cols-[auto_1fr] md:grid-cols-[auto_minmax(0,1fr)_auto]"
                       style={{ animationDelay: `${index * 50}ms` }}
                     >
-                      <div className="flex h-14 w-14 flex-shrink-0 flex-col items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-                        <span className="text-[10px] font-bold uppercase">
+                      <div className="flex h-12 w-12 flex-shrink-0 flex-col items-center justify-center rounded-lg border border-border bg-background">
+                        <span className="text-[0.65rem] font-bold uppercase text-muted-foreground">
                           {caseItem.nextHearing.toLocaleDateString("en-NG", {
                             month: "short",
                           })}
                         </span>
-                        <span className="text-xl font-extrabold leading-none">
+                        <span className="text-lg font-extrabold leading-none text-foreground">
                           {caseItem.nextHearing.getDate()}
                         </span>
                       </div>
@@ -150,7 +150,7 @@ export function Dashboard({
                         <p className="line-clamp-1 text-xs font-medium text-muted-foreground sm:text-sm">
                           {caseItem.caseTitle}
                         </p>
-                        <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
+                        <div className="mt-2 grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
                           <span className="flex items-center gap-1.5">
                             <Clock className="h-3.5 w-3.5" />
                             {caseItem.nextHearing.toLocaleTimeString("en-NG", {
@@ -170,7 +170,7 @@ export function Dashboard({
                       </div>
 
                       <div className="hidden min-w-[88px] flex-col items-end justify-center md:flex">
-                        <span className="rounded-md bg-accent/15 px-2 py-1 text-xs font-bold text-accent-foreground">
+                        <span className="rounded-md bg-primary/10 px-2 py-1 text-xs font-bold text-primary">
                           {daysAway <= 1 ? "Due soon" : `${daysAway} days`}
                         </span>
                         <span className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
@@ -182,7 +182,7 @@ export function Dashboard({
                   );
                 })}
               {cases.filter((c) => c.nextHearing > new Date()).length === 0 && (
-                <div className="rounded-lg border border-dashed border-border p-8 text-center">
+                <div className="p-8 text-center">
                   <CalendarDays className="mx-auto h-8 w-8 text-muted-foreground" />
                   <p className="mt-2 text-sm font-medium text-foreground">No upcoming hearings</p>
                   <p className="text-xs text-muted-foreground">Scheduled hearings will appear here.</p>
