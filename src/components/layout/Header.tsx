@@ -3,6 +3,7 @@ import {
   Bell,
   Search,
   Menu,
+  UserCircle2,
   AlertTriangle,
   FileText,
   Scale,
@@ -37,7 +38,6 @@ export function Header({
   const { notifications, markAsRead, markAllAsRead } = useNotifications();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
-
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
     onSearch?.(e.target.value);
@@ -217,20 +217,12 @@ export function Header({
 
           <ThemeToggle />
 
-          <div className="hidden items-center gap-2 sm:gap-3 rounded-lg border border-border/70 bg-card px-2 sm:px-3 py-2 shadow-sm sm:flex">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
-              {currentUser.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
-                .slice(0, 2)}
-            </div>
-            <div className="hidden sm:block text-sm">
-              <p className="font-medium text-foreground">{currentUser.name}</p>
-              <p className="text-xs text-muted-foreground capitalize">
-                {currentUser.role}
-              </p>
-            </div>
+          <div
+            className="hidden h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground sm:flex"
+            title={`${currentUser.name} - ${currentUser.role}`}
+            aria-label={`${currentUser.name} account`}
+          >
+            <UserCircle2 className="h-9 w-9" />
           </div>
         </div>
       </div>

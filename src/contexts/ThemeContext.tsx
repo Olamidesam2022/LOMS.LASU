@@ -44,6 +44,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const applyTheme = (newTheme: Theme) => {
     const html = document.documentElement;
     let isDarkMode = false;
+    html.classList.add("theme-transitioning");
 
     if (newTheme === "dark") {
       html.classList.add("dark");
@@ -66,6 +67,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
 
     setIsDark(isDarkMode);
+    window.setTimeout(() => {
+      html.classList.remove("theme-transitioning");
+    }, 260);
   };
 
   const setTheme = (newTheme: Theme) => {

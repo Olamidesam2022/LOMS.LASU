@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { LitigationCase, ProceduralStage } from '@/types/legal';
+import { CaseStatus, LitigationCase, ProceduralStage } from '@/types/legal';
 import { toast } from 'sonner';
 
 interface AddCaseDialogProps {
@@ -33,6 +33,8 @@ interface AddCaseDialogProps {
     assignedCounsel?: string;
     court?: string;
     nextHearing?: string;
+    filingDeadline?: string;
+    status?: string;
   }) => Promise<void>;
   caseItem?: LitigationCase | null;
 }
@@ -46,6 +48,8 @@ export function AddCaseDialog({ open, onOpenChange, onCreateCase, caseItem }: Ad
     assignedCounsel: '',
     court: '',
     nextHearing: '',
+    filingDeadline: '',
+    status: 'Active' as CaseStatus,
     description: '',
   });
 
@@ -55,6 +59,13 @@ export function AddCaseDialog({ open, onOpenChange, onCreateCase, caseItem }: Ad
     if (!open) return;
 
     if (caseItem) {
+      let meta: { filingDeadline?: string | null } = {};
+      try {
+        meta = caseItem.description ? JSON.parse(caseItem.description) : {};
+      } catch {
+        meta = {};
+      }
+
       setFormData({
         suitNumber: caseItem.suitNumber === "Unassigned" ? "" : caseItem.suitNumber,
         caseTitle: caseItem.caseTitle,
@@ -63,6 +74,8 @@ export function AddCaseDialog({ open, onOpenChange, onCreateCase, caseItem }: Ad
         assignedCounsel: caseItem.assignedCounsel === "Unassigned" ? "" : caseItem.assignedCounsel,
         court: caseItem.court === "Unspecified" ? "" : caseItem.court,
         nextHearing: caseItem.nextHearing.toISOString().slice(0, 10),
+        filingDeadline: meta.filingDeadline || '',
+        status: caseItem.status,
         description: caseItem.description,
       });
     } else {
@@ -74,6 +87,8 @@ export function AddCaseDialog({ open, onOpenChange, onCreateCase, caseItem }: Ad
         assignedCounsel: '',
         court: '',
         nextHearing: '',
+        filingDeadline: '',
+        status: 'Active',
         description: '',
       });
     }
@@ -98,11 +113,24 @@ export function AddCaseDialog({ open, onOpenChange, onCreateCase, caseItem }: Ad
         assignedCounsel: formData.assignedCounsel,
         court: formData.court,
         nextHearing: formData.nextHearing,
+        filingDeadline: formData.filingDeadline,
+        status: formData.status,
       });
 
-      toast.success(caseItem ? 'Case updated successfully' : 'Case created successfully', {
-        description: `Case ${formData.suitNumber || formData.caseTitle} has been saved.`,
-      });
+      toast.success(
+        caseItem
+          ? 'Case updated successfully'
+          : `Case ${formData.suitNumber} registered successfully.`,
+        {
+          description: `Case ${formData.suitNumber || formData.caseTitle} has been saved.`,
+          action: !caseItem
+            ? {
+                label: "Copy",
+                onClick: () => navigator.clipboard?.writeText(formData.suitNumber),
+              }
+            : undefined,
+        },
+      );
       
       setFormData({
         suitNumber: '',
@@ -112,6 +140,8 @@ export function AddCaseDialog({ open, onOpenChange, onCreateCase, caseItem }: Ad
         assignedCounsel: '',
         court: '',
         nextHearing: '',
+        filingDeadline: '',
+        status: 'Active',
         description: '',
       });
       onOpenChange(false);
@@ -194,6 +224,27 @@ export function AddCaseDialog({ open, onOpenChange, onCreateCase, caseItem }: Ad
               </Select>
             </div>
             <div className="space-y-2">
+              <Label htmlFor="status">Case Status</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as CaseStatus }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="In Progress">In Progress</SelectItem>
+                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="Closed">Closed</SelectItem>
+                  <SelectItem value="Urgent">Urgent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
               <Label htmlFor="assignedCounsel">Assigned Counsel</Label>
               <Input
                 id="assignedCounsel"
@@ -202,15 +253,25 @@ export function AddCaseDialog({ open, onOpenChange, onCreateCase, caseItem }: Ad
                 onChange={(e) => setFormData(prev => ({ ...prev, assignedCounsel: e.target.value }))}
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="nextHearing">Next Date</Label>
+              <Input
+                id="nextHearing"
+                type="date"
+                value={formData.nextHearing}
+                onChange={(e) => setFormData(prev => ({ ...prev, nextHearing: e.target.value }))}
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="nextHearing">Next Hearing Date</Label>
+            <Label htmlFor="filingDeadline">Filing Date</Label>
             <Input
-              id="nextHearing"
+              id="filingDeadline"
               type="date"
-              value={formData.nextHearing}
-              onChange={(e) => setFormData(prev => ({ ...prev, nextHearing: e.target.value }))}
+              value={formData.filingDeadline}
+              onChange={(e) => setFormData(prev => ({ ...prev, filingDeadline: e.target.value }))}
             />
           </div>
 

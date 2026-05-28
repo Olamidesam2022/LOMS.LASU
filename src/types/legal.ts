@@ -6,7 +6,7 @@ export type ProceduralStage =
   | "Trial"
   | "Judgment";
 
-export type CaseStatus = "Active" | "Pending" | "Closed" | "Urgent";
+export type CaseStatus = "Active" | "In Progress" | "Pending" | "Closed" | "Urgent";
 
 export type AdvisoryStatus = "Pending" | "In Progress" | "Completed" | "Urgent";
 
@@ -29,6 +29,12 @@ export interface LitigationCase {
   court: string;
   filedDate: Date;
   description: string;
+  createdBy?: string;
+  creatorEmail?: string;
+  enteredBy?: string;
+  assignedTo?: string;
+  canEdit?: boolean;
+  canDelete?: boolean;
 }
 
 export interface AdvisoryRequest {
@@ -58,6 +64,9 @@ export interface LegalDocument {
   lastModified: Date;
   size: string;
   status: "Draft" | "Final" | "Archived";
+  createdBy?: string;
+  enteredBy?: string;
+  canDelete?: boolean;
 }
 
 export interface AuditLog {

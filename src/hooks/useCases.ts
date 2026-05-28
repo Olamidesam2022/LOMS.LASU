@@ -9,6 +9,9 @@ interface CaseRow {
   title: string;
   description: string | null;
   created_by: string;
+  assigned_to?: string | null;
+  creator_email?: string | null;
+  entered_by?: string | null;
   created_at: string;
 }
 
@@ -21,6 +24,8 @@ export interface CaseInput {
   assignedCounsel?: string;
   court?: string;
   nextHearing?: string;
+  filingDeadline?: string;
+  status?: string;
 }
 
 const parseDescription = (description: string | null) => {
@@ -32,9 +37,19 @@ const parseDescription = (description: string | null) => {
   }
 };
 
-export const toLitigationCase = (row: CaseRow): LitigationCase => {
+export const toLitigationCase = (
+  row: CaseRow,
+  viewer?: { id: string; role?: string | null },
+): LitigationCase => {
   const meta = parseDescription(row.description);
   const createdAt = new Date(row.created_at);
+  const enteredBy = row.entered_by || meta.enteredBy || row.created_by;
+  const canManageAll = viewer?.role === "superadmin";
+  const ownsRecord =
+    !!viewer?.id &&
+    (row.created_by === viewer.id ||
+      row.assigned_to === viewer.id ||
+      enteredBy === viewer.id);
 
   return {
     id: row.id,
@@ -48,11 +63,17 @@ export const toLitigationCase = (row: CaseRow): LitigationCase => {
     court: meta.court || "Unspecified",
     filedDate: createdAt,
     description: meta.description || row.description || "",
+    createdBy: row.created_by,
+    creatorEmail: row.creator_email || meta.creatorEmail || "",
+    enteredBy,
+    assignedTo: row.assigned_to || undefined,
+    canEdit: canManageAll || ownsRecord,
+    canDelete: canManageAll || ownsRecord,
   };
 };
 
 export function useCases() {
-  const { user, isApproved } = useAuth();
+  const { user, role, profile, isApproved } = useAuth();
   const [cases, setCases] = useState<LitigationCase[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -65,7 +86,7 @@ export function useCases() {
     setIsLoading(true);
     const { data, error } = await supabase
       .from("cases")
-      .select("id,title,description,created_by,created_at")
+      .select("id,title,description,created_by,creator_email,entered_by,assigned_to,created_at")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -73,9 +94,13 @@ export function useCases() {
       throw error;
     }
 
-    setCases(((data || []) as CaseRow[]).map(toLitigationCase));
+    setCases(
+      ((data || []) as CaseRow[]).map((row) =>
+        toLitigationCase(row, { id: user.id, role }),
+      ),
+    );
     setIsLoading(false);
-  }, [isApproved, user]);
+  }, [isApproved, role, user]);
 
   const createCase = useCallback(
     async (input: CaseInput) => {
@@ -86,6 +111,8 @@ export function useCases() {
         .insert({
           title: input.title,
           created_by: user.id,
+          creator_email: profile?.email || user.email || null,
+          entered_by: user.id,
           description: JSON.stringify({
             description: input.description || "",
             suitNumber: input.suitNumber || "",
@@ -94,6 +121,8 @@ export function useCases() {
             assignedCounsel: input.assignedCounsel || "",
             court: input.court || "",
             nextHearing: input.nextHearing || null,
+            filingDeadline: input.filingDeadline || null,
+            status: input.status || "Active",
           }),
         })
         .select("id")
@@ -115,6 +144,10 @@ export function useCases() {
   const updateCase = useCallback(
     async (id: string, input: CaseInput) => {
       if (!user) throw new Error("You must be logged in to update a case.");
+      const current = cases.find((caseItem) => caseItem.id === id);
+      if (current && !current.canEdit) {
+        throw new Error("You are not authorized to update this case.");
+      }
 
       const { error } = await supabase
         .from("cases")
@@ -128,6 +161,8 @@ export function useCases() {
             assignedCounsel: input.assignedCounsel || "",
             court: input.court || "",
             nextHearing: input.nextHearing || null,
+            filingDeadline: input.filingDeadline || null,
+            status: input.status || "Active",
           }),
         })
         .eq("id", id);
@@ -142,12 +177,15 @@ export function useCases() {
       });
       await fetchCases();
     },
-    [fetchCases, user],
+    [cases, fetchCases, user],
   );
 
   const deleteCase = useCallback(
     async (caseItem: LitigationCase) => {
       if (!user) throw new Error("You must be logged in to delete a case.");
+      if (!caseItem.canDelete) {
+        throw new Error("You are not authorized to delete this case.");
+      }
 
       const { error } = await supabase.from("cases").delete().eq("id", caseItem.id);
       if (error) throw error;

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { 
   Search, 
   Plus, 
@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { User, UserRole } from '@/types/legal';
 import { cn } from '@/lib/utils';
+import { AppTablePagination, AppTableShell } from '@/components/ui/app-table';
 
 interface UserManagementProps {
   users: User[];
@@ -31,6 +32,8 @@ const roleStyles: Record<UserRole, { label: string; color: string }> = {
 export function UserManagement({ users, currentUser, onAddUser, onEditUser, onDeactivateUser }: UserManagementProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = 
@@ -41,14 +44,20 @@ export function UserManagement({ users, currentUser, onAddUser, onEditUser, onDe
     
     return matchesSearch && matchesRole;
   });
+  const pageCount = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const pagedUsers = useMemo(
+    () => filteredUsers.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [currentPage, filteredUsers],
+  );
 
   return (
     <div className="space-y-4 p-4 md:p-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">User Management</h2>
-          <p className="text-muted-foreground">
+          <h2 className="modern-page-title">User Management</h2>
+          <p className="mt-1 text-sm font-medium text-muted-foreground">
             Role-based access control (RBAC) administration
           </p>
         </div>
@@ -133,14 +142,14 @@ export function UserManagement({ users, currentUser, onAddUser, onEditUser, onDe
       </div>
 
       {/* Users List */}
-      <div className="clean-list">
-        <div className="hidden grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_9rem_auto] gap-3 px-4 py-2 text-xs font-bold uppercase text-muted-foreground md:grid">
+      <AppTableShell>
+        <div className="table-header hidden grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_9rem_auto] gap-3 px-4 py-3 md:grid">
           <span>User</span>
           <span>Department</span>
           <span>Status</span>
           <span className="text-right">Actions</span>
         </div>
-        {filteredUsers.map((user, index) => {
+        {pagedUsers.map((user, index) => {
           const isCurrentUser = user.id === currentUser.id;
           
           return (
@@ -157,7 +166,7 @@ export function UserManagement({ users, currentUser, onAddUser, onEditUser, onDe
                   {user.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                 </div>
                 <div className="min-w-0">
-                  <h4 className="truncate font-bold text-foreground">
+                  <h4 className="truncate text-sm font-extrabold text-foreground">
                     {user.name}
                     {isCurrentUser && (
                       <span className="ml-2 text-xs font-normal text-muted-foreground">(You)</span>
@@ -207,7 +216,13 @@ export function UserManagement({ users, currentUser, onAddUser, onEditUser, onDe
             </div>
           );
         })}
-      </div>
+        <AppTablePagination
+          page={currentPage}
+          pageCount={pageCount}
+          total={filteredUsers.length}
+          onPageChange={setPage}
+        />
+      </AppTableShell>
 
       {/* Empty State */}
       {filteredUsers.length === 0 && (

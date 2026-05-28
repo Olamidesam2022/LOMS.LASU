@@ -15,13 +15,24 @@ interface DocumentRow {
   mime_type: string | null;
   version: string;
   uploaded_by: string;
+  created_by?: string | null;
+  entered_by?: string | null;
   size: string;
   status: "Draft" | "Final" | "Archived";
   created_at: string;
   updated_at: string;
 }
 
-const toLegalDocument = (row: DocumentRow): LegalDocument => ({
+const toLegalDocument = (
+  row: DocumentRow,
+  viewer?: { id: string; role?: string | null },
+): LegalDocument => {
+  const ownsRecord =
+    !!viewer?.id &&
+    (row.created_by === viewer.id || row.entered_by === viewer.id);
+  const canManageAll = viewer?.role === "superadmin";
+
+  return {
   id: row.id,
   name: row.name,
   type: row.type,
@@ -34,10 +45,14 @@ const toLegalDocument = (row: DocumentRow): LegalDocument => ({
   lastModified: new Date(row.updated_at || row.created_at),
   size: row.size,
   status: row.status,
-});
+  createdBy: row.created_by || undefined,
+  enteredBy: row.entered_by || row.created_by || undefined,
+  canDelete: canManageAll || ownsRecord,
+  };
+};
 
 export function useDocuments() {
-  const { user, profile, isApproved } = useAuth();
+  const { user, role, profile, isApproved } = useAuth();
   const [documents, setDocuments] = useState<LegalDocument[]>([]);
 
   const fetchDocuments = useCallback(async () => {
@@ -48,12 +63,16 @@ export function useDocuments() {
 
     const { data, error } = await supabase
       .from("documents")
-      .select("id,name,type,case_id,storage_path,mime_type,version,uploaded_by,size,status,created_at,updated_at")
+      .select("id,name,type,case_id,storage_path,mime_type,version,uploaded_by,created_by,entered_by,size,status,created_at,updated_at")
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    setDocuments(((data || []) as DocumentRow[]).map(toLegalDocument));
-  }, [isApproved, user]);
+    setDocuments(
+      ((data || []) as DocumentRow[]).map((row) =>
+        toLegalDocument(row, { id: user.id, role }),
+      ),
+    );
+  }, [isApproved, role, user]);
 
   const createDocument = useCallback(
     async (input: {
@@ -89,7 +108,7 @@ export function useDocuments() {
         .insert({
           name: input.name,
           type: input.type,
-          case_id: null,
+          case_id: input.relatedCase || null,
           storage_path: storagePath,
           mime_type: input.file.type || "application/octet-stream",
           version: "1.0",
@@ -99,6 +118,7 @@ export function useDocuments() {
             : "0 MB",
           status: "Final",
           created_by: user.id,
+          entered_by: user.id,
         })
         .select("id")
         .single();
@@ -122,6 +142,9 @@ export function useDocuments() {
   const downloadDocument = useCallback(
     async (document: LegalDocument) => {
       if (!user) throw new Error("You must be logged in.");
+      if (!document.canDelete) {
+        throw new Error("You are not authorized to delete this document.");
+      }
       if (!document.storagePath) {
         throw new Error("This document has no stored file attached.");
       }

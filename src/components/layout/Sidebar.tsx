@@ -8,14 +8,15 @@ import {
   ClipboardList,
   Settings,
   LogOut,
-  ChevronLeft,
-  ChevronRight,
-  Shield,
   CalendarDays,
+  Activity,
+  UserCircle2,
   X,
 } from "lucide-react";
 import { User, UserRole } from "@/types/legal";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { BrandLogo } from "@/components/layout/BrandLogo";
 
 interface SidebarProps {
   currentUser: User;
@@ -26,6 +27,7 @@ interface SidebarProps {
   onClose?: () => void;
   collapsed?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
+  onAllCasesToggle?: (enabled: boolean) => void;
 }
 
 interface NavItem {
@@ -62,8 +64,14 @@ const navItems: NavItem[] = [
   },
   {
     id: "calendar",
-    label: "Court Calendar",
+    label: "Calendar",
     icon: CalendarDays,
+    roles: ["superadmin", "admin", "staff"],
+  },
+  {
+    id: "progress",
+    label: "Progress Bar",
+    icon: Activity,
     roles: ["superadmin", "admin", "staff"],
   },
   { id: "audit", label: "Audit Trail", icon: ClipboardList, roles: ["superadmin", "admin"] },
@@ -85,11 +93,14 @@ export function Sidebar({
   onClose,
   collapsed = false,
   onCollapsedChange,
+  onAllCasesToggle,
 }: SidebarProps) {
+  const [overdueCount, setOverdueCount] = useState(0);
+  const [allCasesEnabled, setAllCasesEnabled] = useState(false);
+
   const filteredNavItems = navItems.filter((item) =>
     item.roles.includes(currentUser.role),
   );
-
   // Close sidebar on navigation in mobile
   const handleNavClick = (viewId: string) => {
     onViewChange(viewId);
@@ -108,6 +119,44 @@ export function Sidebar({
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    const fetchOverdueCount = async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const { count, error } = await supabase
+        .from("deadlines")
+        .select("id", { count: "exact", head: true })
+        .lt("due_date", today)
+        .neq("status", "completed");
+
+      if (error) {
+        console.error("Failed to fetch overdue deadline count:", error);
+        return;
+      }
+
+      setOverdueCount(count ?? 0);
+    };
+
+    fetchOverdueCount();
+    const channel = supabase
+      .channel("sidebar-deadlines-badge")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "deadlines" },
+        fetchOverdueCount,
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const handleAllCasesToggle = async () => {
+    const nextValue = !allCasesEnabled;
+    setAllCasesEnabled(nextValue);
+    onAllCasesToggle?.(nextValue);
+  };
+
   return (
     <>
       {/* Mobile Overlay */}
@@ -123,19 +172,19 @@ export function Sidebar({
         className={cn(
           "glass-sidebar fixed left-0 top-0 z-50 flex h-screen flex-col transition-all duration-300 ease-in-out",
           // Mobile: Full width drawer, hidden by default
-          "w-72",
+          "w-80",
           // Mobile display
           !isOpen && "-translate-x-full md:translate-x-0",
           isOpen && "translate-x-0",
           // Desktop: Collapsible with smooth width transition
           "md:relative md:translate-x-0",
-          collapsed ? "md:w-20 lg:w-20" : "md:w-72 lg:w-72",
+          collapsed ? "md:w-20 lg:w-20" : "md:w-80 lg:w-80",
           // Prevent sidebar from being hidden on desktop when collapsed
           "md:block",
         )}
       >
         {/* Header */}
-        <div className="flex h-20 items-center justify-between border-b border-sidebar-border/80 px-4">
+        <div className="flex h-16 items-center justify-between border-b border-sidebar-border/80 px-3">
           {/* Mobile close button */}
           <button
             onClick={onClose}
@@ -145,30 +194,18 @@ export function Sidebar({
           </button>
 
           {(!collapsed || isOpen) && (
-            <div className="flex items-center gap-3 animate-fade-in">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-card">
-                <Shield className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-lg font-extrabold text-sidebar-foreground">
-                  LASU Legal
-                </h1>
-                <p className="text-xs font-medium text-sidebar-foreground/60">
-                  Case Management
-                </p>
-              </div>
-            </div>
+            <BrandLogo className="animate-fade-in" />
           )}
           {collapsed && !isOpen && (
-            <div className="mx-auto hidden h-10 w-10 items-center justify-center rounded-lg border border-border bg-card md:flex">
-              <Shield className="h-6 w-6 text-primary" />
+            <div className="app-brand-mark mx-auto hidden h-10 w-10 md:flex">
+              <span aria-hidden="true" />
             </div>
           )}
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto p-4 scrollbar-thin">
-          <ul className="space-y-2">
+        <nav className="flex-1 overflow-y-auto p-3 scrollbar-thin">
+          <ul className="space-y-1.5">
             {filteredNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeView === item.id;
@@ -188,42 +225,60 @@ export function Sidebar({
                   >
                     <Icon className="h-5 w-5 flex-shrink-0" />
                     {(!collapsed || isOpen) && (
-                      <span className="truncate">{item.label}</span>
+                      <>
+                        <span className="truncate">{item.label}</span>
+                        {item.id === "calendar" && overdueCount > 0 && (
+                          <span className="ml-auto rounded-full bg-destructive px-2 py-0.5 text-xs font-bold text-destructive-foreground">
+                            {overdueCount}
+                          </span>
+                        )}
+                      </>
                     )}
                   </button>
                 </li>
               );
             })}
           </ul>
+          {(currentUser.role === "superadmin" || currentUser.role === "admin") &&
+            (!collapsed || isOpen) && (
+              <div className="mt-3 rounded-lg border border-sidebar-border bg-sidebar-accent/40 p-2.5">
+                <label className="flex cursor-pointer items-center justify-between gap-3 text-sm text-sidebar-foreground">
+                  <span className="text-xs font-semibold leading-tight">
+                    All Cases
+                    <span className="block text-xs text-sidebar-foreground/60">
+                      Admin-wide view
+                    </span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={allCasesEnabled}
+                    onChange={handleAllCasesToggle}
+                    className="h-4 w-4 accent-current"
+                  />
+                </label>
+              </div>
+            )}
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-sidebar-border p-4">
+        <div className="shrink-0 border-t border-sidebar-border p-2.5">
           {/* User Info */}
           <div
             className={cn(
-              "mb-4 flex items-center gap-3 rounded-lg border border-border bg-muted/50 p-3 transition-all duration-300",
+              "mb-2.5 flex items-center gap-3 rounded-xl p-2 text-sidebar-foreground transition-colors duration-300 hover:bg-sidebar-accent",
               collapsed && !isOpen && "md:justify-center",
             )}
+            title={`${currentUser.name} - ${currentUser.role}`}
+            aria-label={`${currentUser.name} account`}
           >
-            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
-              {currentUser.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
-                .slice(0, 2)}
-            </div>
+            <UserCircle2 className="h-9 w-9 flex-shrink-0 text-sidebar-foreground" />
             {(!collapsed || isOpen) && (
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-sidebar-foreground">
+                <p className="truncate text-sm font-semibold text-sidebar-foreground">
                   {currentUser.name}
                 </p>
-                <p className="truncate text-xs text-sidebar-foreground/60">
-                  {currentUser.role === "superadmin"
-                    ? "Superadmin"
-                    : currentUser.role === "admin"
-                      ? "Administrator"
-                      : "Staff"}
+                <p className="truncate text-xs capitalize text-sidebar-foreground/60">
+                  {currentUser.role}
                 </p>
               </div>
             )}
@@ -232,7 +287,7 @@ export function Sidebar({
           {/* Action Buttons */}
           <div
             className={cn(
-              "space-y-2",
+                "space-y-1.5",
               collapsed &&
                 !isOpen &&
                 "md:flex md:flex-col md:items-center md:gap-2",

@@ -1,13 +1,4 @@
-import {
-  Scale,
-  FileText,
-  AlertTriangle,
-  Clock,
-  CalendarDays,
-  MapPin,
-  UserRound,
-} from "lucide-react";
-import { MetricCard } from "./MetricCard";
+import { CalendarDays, CheckCircle2, FileText, Scale, Users } from "lucide-react";
 import { RiskMonitor } from "./RiskMonitor";
 import { RecentActivity } from "./RecentActivity";
 import {
@@ -18,6 +9,7 @@ import {
 } from "@/types/legal";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePendingApprovals } from "@/hooks/usePendingApprovals";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 interface DashboardProps {
@@ -27,6 +19,13 @@ interface DashboardProps {
   auditLogs: AuditLog[];
   onNavigate?: (view: string) => void;
 }
+
+const quickLinks = [
+  { label: "Cases", view: "litigation", icon: Scale, tone: "blue" },
+  { label: "Documents", view: "documents", icon: FileText, tone: "pink" },
+  { label: "Calendar", view: "calendar", icon: CalendarDays, tone: "mint" },
+  { label: "Users", view: "users", icon: Users, tone: "sand", superadminOnly: true },
+];
 
 export function Dashboard({
   metrics,
@@ -46,165 +45,200 @@ export function Dashboard({
   const pendingAdvisory = advisoryRequests.filter(
     (r) => r.status === "Pending" || r.status === "Urgent",
   ).length;
-  const urgentAdvisory = advisoryRequests.filter(
-    (r) => r.status === "Urgent",
-  ).length;
+  const urgentAdvisory = advisoryRequests.filter((r) => r.status === "Urgent").length;
   const canViewAudit = role === "superadmin" || role === "admin";
+  const upcomingCases = cases
+    .filter((c) => c.nextHearing > new Date())
+    .sort((a, b) => a.nextHearing.getTime() - b.nextHearing.getTime())
+    .slice(0, 4);
 
   return (
-    <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6 overflow-hidden">
-      {/* Metrics Grid */}
-      <div className="grid gap-3 sm:gap-4 md:grid-cols-3">
-        <MetricCard
-          title="Active Litigation"
-          value={metrics.activeLitigation}
-          subtitle={`${metrics.totalCases} total cases`}
-          icon={Scale}
-          variant="default"
-        />
-        <MetricCard
-          title="Advisory Backlog"
-          value={pendingAdvisory}
-          subtitle={`${urgentAdvisory} urgent requests`}
-          icon={FileText}
-          variant="warning"
-        />
-        <MetricCard
-          title="Urgent Hearings"
-          value={metrics.urgentHearings}
-          subtitle="Within 72 hours"
-          icon={AlertTriangle}
-          variant="warning"
-        />
-      </div>
-
-      {/* Risk Monitor */}
-      <RiskMonitor cases={cases} />
-
-      {/* Two Column Layout */}
-      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
-        {/* Upcoming Hearings */}
-        <div className="lg:col-span-2 overflow-hidden">
-          <div className="surface-panel">
-            <div className="border-b border-border px-3 py-3 sm:px-4">
-              <div className="flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <h3 className="font-semibold text-foreground text-sm sm:text-base">
-                    Upcoming Hearings
-                  </h3>
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    Next 7 days schedule
-                  </p>
-                </div>
-                <button
-                  onClick={() => onNavigate?.("calendar")}
-                  className="rounded-lg bg-muted px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-foreground transition-colors hover:bg-muted/80 whitespace-nowrap flex-shrink-0"
-                >
-                  View Calendar
-                </button>
-              </div>
-            </div>
-
-            <div className="clean-list border-y-0">
-              {cases
-                .filter((c) => c.nextHearing > new Date())
-                .sort(
-                  (a, b) => a.nextHearing.getTime() - b.nextHearing.getTime(),
-                )
-                .slice(0, 4)
-                .map((caseItem, index) => {
-                  const daysAway = Math.ceil(
-                    (caseItem.nextHearing.getTime() - new Date().getTime()) /
-                      (24 * 60 * 60 * 1000),
-                  );
-
-                  return (
-                    <button
-                      key={caseItem.id}
-                      onClick={() => onNavigate?.("calendar")}
-                      className="clean-list-row grid-cols-[auto_1fr] md:grid-cols-[auto_minmax(0,1fr)_auto]"
-                      style={{ animationDelay: `${index * 50}ms` }}
-                    >
-                      <div className="flex h-12 w-12 flex-shrink-0 flex-col items-center justify-center rounded-lg border border-border bg-background">
-                        <span className="text-[0.65rem] font-bold uppercase text-muted-foreground">
-                          {caseItem.nextHearing.toLocaleDateString("en-NG", {
-                            month: "short",
-                          })}
-                        </span>
-                        <span className="text-lg font-extrabold leading-none text-foreground">
-                          {caseItem.nextHearing.getDate()}
-                        </span>
-                      </div>
-
-                      <div className="min-w-0">
-                        <div className="mb-1 flex flex-wrap items-center gap-2">
-                          <h4 className="truncate text-sm font-bold text-foreground sm:text-base">
-                            {caseItem.suitNumber}
-                          </h4>
-                          <span
-                            className={`status-pill status-${caseItem.proceduralStage.toLowerCase()}`}
-                          >
-                            {caseItem.proceduralStage}
-                          </span>
-                        </div>
-                        <p className="line-clamp-1 text-xs font-medium text-muted-foreground sm:text-sm">
-                          {caseItem.caseTitle}
-                        </p>
-                        <div className="mt-2 grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
-                          <span className="flex items-center gap-1.5">
-                            <Clock className="h-3.5 w-3.5" />
-                            {caseItem.nextHearing.toLocaleTimeString("en-NG", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                          <span className="flex min-w-0 items-center gap-1.5">
-                            <MapPin className="h-3.5 w-3.5 shrink-0" />
-                            <span className="truncate">{caseItem.court}</span>
-                          </span>
-                          <span className="flex min-w-0 items-center gap-1.5">
-                            <UserRound className="h-3.5 w-3.5 shrink-0" />
-                            <span className="truncate">{caseItem.assignedCounsel}</span>
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="hidden min-w-[88px] flex-col items-end justify-center md:flex">
-                        <span className="rounded-md bg-primary/10 px-2 py-1 text-xs font-bold text-primary">
-                          {daysAway <= 1 ? "Due soon" : `${daysAway} days`}
-                        </span>
-                        <span className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-                          <CalendarDays className="h-3.5 w-3.5" />
-                          Open
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-              {cases.filter((c) => c.nextHearing > new Date()).length === 0 && (
-                <div className="p-8 text-center">
-                  <CalendarDays className="mx-auto h-8 w-8 text-muted-foreground" />
-                  <p className="mt-2 text-sm font-medium text-foreground">No upcoming hearings</p>
-                  <p className="text-xs text-muted-foreground">Scheduled hearings will appear here.</p>
-                </div>
-              )}
-            </div>
+    <div className="dashboard-canvas space-y-5 p-3 sm:p-5 lg:p-7">
+      <section className="dashboard-hero">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-muted-foreground">My Organization</p>
+            <h1 className="mt-1 text-3xl font-black tracking-tight text-foreground sm:text-4xl">
+              LASU Legal Unit
+            </h1>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {["Organization", "Cases", "Documents", "Calendar", ...(role === "superadmin" ? ["Users"] : [])].map((item) => (
+              <button
+                key={item}
+                onClick={() =>
+                  onNavigate?.(
+                    item === "Organization"
+                      ? "dashboard"
+                      : item === "Cases"
+                        ? "litigation"
+                        : item.toLowerCase(),
+                  )
+                }
+                className={cn(
+                  "rounded-full px-4 py-2 text-xs font-bold transition-colors",
+                  item === "Organization"
+                    ? "bg-foreground text-background"
+                    : "bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                {item}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Recent Activity */}
-        <RecentActivity
-          logs={auditLogs}
-          onViewAll={canViewAudit ? () => onNavigate?.("audit") : undefined}
-        />
-      </div>
+        <div className="mt-6 grid gap-4 xl:grid-cols-2">
+          <div className="dashboard-stat-card pastel-blue">
+            <div className="flex items-center justify-between">
+              <span className="dashboard-stat-icon">
+                <Scale className="h-4 w-4" />
+              </span>
+              <span className="dashboard-mini-pill">{metrics.totalCases} total</span>
+            </div>
+            <p className="mt-4 text-sm font-extrabold text-foreground">Operations</p>
+            <div className="mt-2 flex items-end gap-2">
+              <span className="text-4xl font-black tracking-tight text-foreground">
+                {metrics.activeLitigation}
+              </span>
+              <span className="pb-1 text-sm font-semibold text-muted-foreground">
+                / active cases
+              </span>
+            </div>
+            <div className="mt-4 flex gap-2">
+              {[0, 1, 2, 3, 4, 5, 6].map((index) => (
+                <span
+                  key={index}
+                  className={cn(
+                    "h-7 flex-1 rounded-md",
+                    index < 5 ? "bg-blue-400/55" : "border border-dashed border-slate-300/80",
+                  )}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="dashboard-stat-card pastel-cyan">
+            <div className="flex items-center justify-between">
+              <span className="dashboard-stat-icon">
+                <FileText className="h-4 w-4" />
+              </span>
+              <span className="dashboard-mini-pill">{urgentAdvisory} urgent</span>
+            </div>
+            <p className="mt-4 text-sm font-extrabold text-foreground">Data transfer</p>
+            <div className="mt-2 flex items-end gap-2">
+              <span className="text-4xl font-black tracking-tight text-foreground">
+                {pendingAdvisory}
+              </span>
+              <span className="pb-1 text-sm font-semibold text-muted-foreground">
+                advisory backlog
+              </span>
+            </div>
+            <div className="mt-4 flex gap-2">
+              {[0, 1, 2, 3, 4, 5, 6].map((index) => (
+                <span
+                  key={index}
+                  className={cn(
+                    "h-7 flex-1 rounded-md",
+                    index < 4 ? "bg-slate-400/35" : "border border-dashed border-slate-300/80",
+                  )}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-[0.85fr_1.15fr]">
+        <div className="dashboard-panel">
+          <div className="flex items-center justify-between border-b border-border/70 p-4">
+            <div>
+              <h2 className="text-lg font-black text-foreground">Recommended for you</h2>
+              <p className="text-sm text-muted-foreground">Quick access to core workspaces</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 p-4">
+            {quickLinks
+              .filter((item) => !item.superadminOnly || role === "superadmin")
+              .map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.label}
+                  onClick={() => onNavigate?.(item.view)}
+                  className={cn("dashboard-quick-tile", `tile-${item.tone}`)}
+                >
+                  <span className="dashboard-quick-icon">
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <span className="text-sm font-black text-foreground">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="dashboard-panel overflow-hidden">
+          <div className="flex items-center justify-between gap-3 border-b border-border/70 p-4">
+            <div>
+              <h2 className="text-lg font-black text-foreground">Upcoming Hearings</h2>
+              <p className="text-sm text-muted-foreground">Next scheduled matters</p>
+            </div>
+            <button
+              onClick={() => onNavigate?.("calendar")}
+              className="rounded-full bg-foreground px-4 py-2 text-xs font-black text-background"
+            >
+              View Calendar
+            </button>
+          </div>
+          <div className="divide-y divide-border/70">
+            {upcomingCases.length === 0 && (
+              <div className="p-8 text-center">
+                <CalendarDays className="mx-auto h-8 w-8 text-muted-foreground" />
+                <p className="mt-2 text-sm font-bold text-foreground">No upcoming hearings</p>
+                <p className="text-xs text-muted-foreground">Scheduled hearings will appear here.</p>
+              </div>
+            )}
+            {upcomingCases.map((caseItem) => (
+              <button
+                key={caseItem.id}
+                onClick={() => onNavigate?.("calendar")}
+                className="grid w-full gap-3 p-4 text-left transition-colors hover:bg-muted/50 sm:grid-cols-[auto_1fr_auto] sm:items-center"
+              >
+                <span className="flex h-12 w-12 flex-col items-center justify-center rounded-xl bg-muted">
+                  <span className="text-[10px] font-black uppercase text-muted-foreground">
+                    {caseItem.nextHearing.toLocaleDateString("en-NG", { month: "short" })}
+                  </span>
+                  <span className="text-lg font-black text-foreground">
+                    {caseItem.nextHearing.getDate()}
+                  </span>
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate font-black text-foreground">
+                    {caseItem.suitNumber}
+                  </span>
+                  <span className="block truncate text-sm text-muted-foreground">
+                    {caseItem.caseTitle}
+                  </span>
+                </span>
+                <span className="status-pill status-active w-fit">{caseItem.status}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <RiskMonitor cases={cases} />
+
+      <RecentActivity
+        logs={auditLogs}
+        onViewAll={canViewAudit ? () => onNavigate?.("audit") : undefined}
+      />
 
       {role === "superadmin" && (
-        <div className="surface-card p-4 sm:p-5 overflow-hidden mt-4">
+        <div className="dashboard-panel p-4 sm:p-5">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <h3 className="font-semibold text-foreground">
-              Pending User Approvals
-            </h3>
+            <h3 className="font-black text-foreground">Pending User Approvals</h3>
             <button
               onClick={() => fetchPendingUsers()}
               className="toolbar-button px-3 py-1"
@@ -224,10 +258,10 @@ export function Dashboard({
               {pendingUsers.map((u) => (
                 <div
                   key={u.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-background/60 p-3"
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-border/70 bg-background/60 p-3"
                 >
                   <div>
-                    <p className="font-medium text-foreground">{u.name}</p>
+                    <p className="font-bold text-foreground">{u.name}</p>
                     <p className="text-xs text-muted-foreground">
                       {u.email} - {u.role === "admin" ? "admin" : "legal user"}
                     </p>
@@ -243,7 +277,7 @@ export function Dashboard({
                           toast.error("Could not approve user");
                         }
                       }}
-                      className="rounded-lg bg-accent px-3 py-1 text-sm font-medium text-accent-foreground"
+                      className="rounded-full bg-foreground px-3 py-1 text-sm font-bold text-background"
                     >
                       Approve
                     </button>
@@ -257,7 +291,7 @@ export function Dashboard({
                           toast.error("Could not reject user");
                         }
                       }}
-                      className="rounded-lg bg-muted px-3 py-1 text-sm font-medium text-foreground border border-border"
+                      className="rounded-full bg-muted px-3 py-1 text-sm font-bold text-foreground"
                     >
                       Reject
                     </button>
@@ -271,4 +305,3 @@ export function Dashboard({
     </div>
   );
 }
-

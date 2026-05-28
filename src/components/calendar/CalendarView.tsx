@@ -124,8 +124,8 @@ export function CalendarView({ cases, onViewCase }: CalendarViewProps) {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h2 className="text-xl sm:text-2xl font-bold text-foreground">Court Calendar</h2>
-          <p className="text-xs sm:text-sm text-muted-foreground">View and manage hearing schedules</p>
+          <h2 className="modern-page-title">Court Calendar</h2>
+          <p className="mt-1 text-xs font-medium text-muted-foreground sm:text-sm">View and manage hearing schedules</p>
         </div>
         <div className="flex items-center">
           <div className="flex rounded-lg border border-border bg-card overflow-hidden">
@@ -159,7 +159,7 @@ export function CalendarView({ cases, onViewCase }: CalendarViewProps) {
               >
                 <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
-              <h3 className="text-sm sm:text-lg font-semibold text-foreground">
+              <h3 className="text-sm font-extrabold text-foreground sm:text-lg">
                 {headingLabel}
               </h3>
               <button
@@ -240,7 +240,7 @@ export function CalendarView({ cases, onViewCase }: CalendarViewProps) {
                         <p className="text-xs font-medium uppercase text-muted-foreground">
                           {date.toLocaleDateString('en-NG', { weekday: 'short' })}
                         </p>
-                        <p className="text-lg font-semibold text-foreground">{date.getDate()}</p>
+                        <p className="text-lg font-extrabold text-foreground">{date.getDate()}</p>
                       </div>
                       <div className="space-y-2">
                         {dayCases.map((caseItem) => (
@@ -278,7 +278,7 @@ export function CalendarView({ cases, onViewCase }: CalendarViewProps) {
                       })}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-foreground">{caseItem.suitNumber}</p>
+                      <p className="font-extrabold text-foreground">{caseItem.suitNumber}</p>
                       <p className="truncate text-sm text-muted-foreground">{caseItem.caseTitle}</p>
                       <p className="mt-1 text-xs text-muted-foreground">{caseItem.court}</p>
                     </div>

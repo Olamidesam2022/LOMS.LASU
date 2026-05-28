@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { 
   Search, 
   Download, 
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { AuditLog } from '@/types/legal';
 import { cn } from '@/lib/utils';
+import { AppTablePagination, AppTableShell } from '@/components/ui/app-table';
 
 interface AuditTrailProps {
   logs: AuditLog[];
@@ -47,6 +48,8 @@ export function AuditTrail({ logs }: AuditTrailProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [actionFilter, setActionFilter] = useState<string | 'all'>('all');
   const [dateRange, setDateRange] = useState<'today' | 'week' | 'month' | 'all'>('all');
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   const filteredLogs = logs.filter(log => {
     const matchesSearch = 
@@ -72,6 +75,12 @@ export function AuditTrail({ logs }: AuditTrailProps) {
   });
 
   const actions = ['VIEW', 'UPDATE', 'CREATE', 'DELETE', 'DOWNLOAD'];
+  const pageCount = Math.max(1, Math.ceil(filteredLogs.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const pagedLogs = useMemo(
+    () => filteredLogs.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [currentPage, filteredLogs],
+  );
 
   const handleExport = () => {
     const headers = ["Timestamp", "User", "Action", "Resource", "Resource ID", "Details", "IP Address"];
@@ -118,8 +127,8 @@ export function AuditTrail({ logs }: AuditTrailProps) {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Audit Trail</h2>
-          <p className="text-muted-foreground">
+          <h2 className="modern-page-title">Audit Trail</h2>
+          <p className="mt-1 text-sm font-medium text-muted-foreground">
             NDPR 2019 compliant activity logging
           </p>
         </div>
@@ -199,11 +208,10 @@ export function AuditTrail({ logs }: AuditTrailProps) {
       </div>
 
       {/* Audit Log Table - Desktop */}
-      <div className="surface-card hidden overflow-hidden lg:block">
-        <div className="overflow-x-auto">
+      <AppTableShell className="hidden lg:block">
           <table className="w-full">
             <thead>
-              <tr className="table-header">
+              <tr className="table-header sticky-table-header">
                 <th className="px-4 py-3 text-left">Timestamp</th>
                 <th className="px-4 py-3 text-left">User</th>
                 <th className="px-4 py-3 text-left">Action</th>
@@ -213,7 +221,7 @@ export function AuditTrail({ logs }: AuditTrailProps) {
               </tr>
             </thead>
             <tbody>
-              {filteredLogs.map((log, index) => {
+              {pagedLogs.map((log, index) => {
                 const ActionIcon = actionIcons[log.action] || Eye;
                 const ResourceIcon = resourceIcons[log.resource] || FileText;
 
@@ -234,7 +242,7 @@ export function AuditTrail({ logs }: AuditTrailProps) {
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-bold text-foreground">
                           {log.userName.split(' ').map(n => n[0]).join('').slice(0, 2)}
                         </div>
-                        <span className="font-medium text-foreground">{log.userName}</span>
+                        <span className="text-sm font-extrabold text-foreground">{log.userName}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3">
@@ -247,7 +255,7 @@ export function AuditTrail({ logs }: AuditTrailProps) {
                       <div className="flex items-center gap-2 text-sm">
                         <ResourceIcon className="h-4 w-4 text-muted-foreground" />
                         <div>
-                          <span className="text-foreground">{log.resource}</span>
+                          <span className="font-semibold text-foreground">{log.resource}</span>
                           <p className="max-w-[150px] truncate text-xs text-muted-foreground">
                             {log.resourceId}
                           </p>
@@ -267,7 +275,6 @@ export function AuditTrail({ logs }: AuditTrailProps) {
               })}
             </tbody>
           </table>
-        </div>
 
         {filteredLogs.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -278,11 +285,17 @@ export function AuditTrail({ logs }: AuditTrailProps) {
             </p>
           </div>
         )}
-      </div>
+        <AppTablePagination
+          page={currentPage}
+          pageCount={pageCount}
+          total={filteredLogs.length}
+          onPageChange={setPage}
+        />
+      </AppTableShell>
 
       {/* Audit Log Cards - Mobile/Tablet */}
-      <div className="clean-list lg:hidden">
-        {filteredLogs.map((log, index) => {
+      <AppTableShell className="lg:hidden">
+        {pagedLogs.map((log, index) => {
           const ActionIcon = actionIcons[log.action] || Eye;
           const ResourceIcon = resourceIcons[log.resource] || FileText;
 
@@ -297,7 +310,7 @@ export function AuditTrail({ logs }: AuditTrailProps) {
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-bold text-foreground">
                     {log.userName.split(' ').map(n => n[0]).join('').slice(0, 2)}
                   </div>
-                  <span className="font-medium text-foreground">{log.userName}</span>
+                  <span className="text-sm font-extrabold text-foreground">{log.userName}</span>
                 </div>
                 <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium", actionColors[log.action])}>
                   <ActionIcon className="h-3 w-3" />
@@ -336,7 +349,13 @@ export function AuditTrail({ logs }: AuditTrailProps) {
             </p>
           </div>
         )}
-      </div>
+        <AppTablePagination
+          page={currentPage}
+          pageCount={pageCount}
+          total={filteredLogs.length}
+          onPageChange={setPage}
+        />
+      </AppTableShell>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { 
   Search, 
   Upload, 
@@ -15,11 +15,13 @@ import {
   Grid,
   List
 } from 'lucide-react';
-import { LegalDocument, DocumentType } from '@/types/legal';
+import { LegalDocument, DocumentType, LitigationCase } from '@/types/legal';
 import { cn } from '@/lib/utils';
+import { AppTablePagination, AppTableShell } from '@/components/ui/app-table';
 
 interface DocumentVaultProps {
   documents: LegalDocument[];
+  cases?: LitigationCase[];
   onUpload?: () => void;
   onViewDocument?: (doc: LegalDocument) => void;
   onDownloadDocument?: (doc: LegalDocument) => void;
@@ -48,15 +50,22 @@ const statusStyles = {
   Archived: 'bg-muted text-muted-foreground',
 };
 
-export function DocumentVault({ documents, onUpload, onViewDocument, onDownloadDocument, onDeleteDocument }: DocumentVaultProps) {
+export function DocumentVault({ documents, cases = [], onUpload, onViewDocument, onDownloadDocument, onDeleteDocument }: DocumentVaultProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<DocumentType | 'all'>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   const filteredDocuments = documents.filter(doc => {
+    const relatedCase = doc.caseId
+      ? cases.find((caseItem) => caseItem.id === doc.caseId)
+      : undefined;
+    const caseNumber = relatedCase?.suitNumber || "";
     const matchesSearch = 
       doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.uploadedBy.toLowerCase().includes(searchQuery.toLowerCase());
+      doc.uploadedBy.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      caseNumber.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesType = typeFilter === 'all' || doc.type === typeFilter;
     
@@ -64,14 +73,20 @@ export function DocumentVault({ documents, onUpload, onViewDocument, onDownloadD
   });
 
   const documentTypes: DocumentType[] = ['MoU', 'Court Process', 'Legal Opinion', 'Contract', 'Correspondence'];
+  const pageCount = Math.max(1, Math.ceil(filteredDocuments.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const pagedDocuments = useMemo(
+    () => filteredDocuments.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [currentPage, filteredDocuments],
+  );
 
   return (
     <div className="space-y-4 p-4 md:p-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Document Vault</h2>
-          <p className="text-muted-foreground">
+          <h2 className="modern-page-title">Document Vault</h2>
+          <p className="mt-1 text-sm font-medium text-muted-foreground">
             Secure digital archive with version control
           </p>
         </div>
@@ -90,7 +105,7 @@ export function DocumentVault({ documents, onUpload, onViewDocument, onDownloadD
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           <input
             type="text"
-            placeholder="Search documents..."
+            placeholder="Search filename, case number, or uploader..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="search-input w-full pl-10"
@@ -175,7 +190,7 @@ export function DocumentVault({ documents, onUpload, onViewDocument, onDownloadD
       {/* Documents Grid View */}
       {viewMode === 'grid' && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredDocuments.map((doc, index) => {
+          {pagedDocuments.map((doc, index) => {
             const Icon = typeIcons[doc.type];
             
             return (
@@ -249,13 +264,15 @@ export function DocumentVault({ documents, onUpload, onViewDocument, onDownloadD
                   >
                     <Download className="h-4 w-4" />
                   </button>
-                  <button
-                    onClick={() => onDeleteDocument?.(doc)}
-                    className="icon-button bg-background shadow-sm hover:bg-destructive/10 hover:text-destructive"
-                    aria-label={`Delete ${doc.name}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  {doc.canDelete && (
+                    <button
+                      onClick={() => onDeleteDocument?.(doc)}
+                      className="icon-button bg-background shadow-sm hover:bg-destructive/10 hover:text-destructive"
+                      aria-label={`Delete ${doc.name}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -265,8 +282,8 @@ export function DocumentVault({ documents, onUpload, onViewDocument, onDownloadD
 
       {/* Documents List View */}
       {viewMode === 'list' && (
-        <div className="clean-list">
-          <div className="hidden grid-cols-[minmax(0,1.8fr)_9rem_7rem_8rem_7rem_auto] gap-3 px-4 py-2 text-xs font-bold uppercase text-muted-foreground lg:grid">
+        <AppTableShell>
+          <div className="table-header hidden grid-cols-[minmax(0,1.8fr)_9rem_7rem_8rem_7rem_auto] gap-3 px-4 py-3 lg:grid">
             <span>Document</span>
             <span>Type</span>
             <span>Status</span>
@@ -274,7 +291,7 @@ export function DocumentVault({ documents, onUpload, onViewDocument, onDownloadD
             <span>Size</span>
             <span className="text-right">Actions</span>
           </div>
-          {filteredDocuments.map((doc, index) => {
+          {pagedDocuments.map((doc, index) => {
             const Icon = typeIcons[doc.type];
 
             return (
@@ -288,7 +305,7 @@ export function DocumentVault({ documents, onUpload, onViewDocument, onDownloadD
                     <Icon className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-bold text-foreground">{doc.name}</p>
+                    <p className="truncate text-sm font-extrabold text-foreground">{doc.name}</p>
                     <p className="truncate text-xs text-muted-foreground">Uploaded by {doc.uploadedBy} · v{doc.version}</p>
                   </div>
                 </div>
@@ -318,18 +335,26 @@ export function DocumentVault({ documents, onUpload, onViewDocument, onDownloadD
                   <button onClick={() => onDownloadDocument?.(doc)} className="icon-button" aria-label={`Download ${doc.name}`}>
                     <Download className="h-4 w-4" />
                   </button>
-                  <button
-                    onClick={() => onDeleteDocument?.(doc)}
-                    className="icon-button hover:bg-destructive/10 hover:text-destructive"
-                    aria-label={`Delete ${doc.name}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  {doc.canDelete && (
+                    <button
+                      onClick={() => onDeleteDocument?.(doc)}
+                      className="icon-button hover:bg-destructive/10 hover:text-destructive"
+                      aria-label={`Delete ${doc.name}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             );
           })}
-        </div>
+          <AppTablePagination
+            page={currentPage}
+            pageCount={pageCount}
+            total={filteredDocuments.length}
+            onPageChange={setPage}
+          />
+        </AppTableShell>
       )}
 
       {/* Empty State */}

@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { LitigationCase, ProceduralStage } from '@/types/legal';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface LitigationRegistryProps {
   cases: LitigationCase[];
@@ -33,6 +35,7 @@ export function LitigationRegistry({ cases, onAddCase, onViewCase, onEditCase, o
   const [searchQuery, setSearchQuery] = useState('');
   const [stageFilter, setStageFilter] = useState<ProceduralStage | 'all'>('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<'all' | 'advisory'>('all');
 
   const filteredCases = cases.filter(caseItem => {
     const matchesSearch = 
@@ -48,13 +51,65 @@ export function LitigationRegistry({ cases, onAddCase, onViewCase, onEditCase, o
 
   const stages: ProceduralStage[] = ['Mention', 'Interlocutory', 'Trial', 'Judgment'];
 
+  const advisoryStatuses = [
+    { key: 'open', label: 'Open' },
+    { key: 'in_progress', label: 'In Progress' },
+    { key: 'pending_response', label: 'Pending Response' },
+    { key: 'closed', label: 'Closed' },
+  ];
+
+  const getCaseMeta = (caseItem: LitigationCase) => {
+    try {
+      return caseItem.description ? JSON.parse(caseItem.description) : {};
+    } catch {
+      return {};
+    }
+  };
+
+  const advisoryCases = filteredCases.filter((caseItem) => {
+    const meta = getCaseMeta(caseItem) as { case_type?: string; caseType?: string };
+    return (meta.case_type || meta.caseType || '').toLowerCase() === 'advisory';
+  });
+
+  const normalizeStatus = (status: string) =>
+    status.toLowerCase().replace(/\s+/g, '_');
+
+  const handleAdvisoryDrop = async (
+    event: React.DragEvent<HTMLDivElement>,
+    newStatus: string,
+  ) => {
+    event.preventDefault();
+    const caseId = event.dataTransfer.getData('text/plain');
+    if (!caseId) return;
+
+    const caseItem = filteredCases.find((item) => item.id === caseId);
+    const meta = caseItem ? getCaseMeta(caseItem) : {};
+    const { error } = await supabase
+      .from('cases')
+      .update({
+        description: JSON.stringify({
+          ...meta,
+          status: newStatus,
+        }),
+      })
+      .eq('id', caseId);
+
+    if (error) {
+      console.error('Failed to update advisory case status:', error);
+      toast.error('Unable to update advisory request status');
+      return;
+    }
+
+    toast.success('Advisory request status updated');
+  };
+
   return (
     <div className="space-y-4 p-4 md:p-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Litigation Registry</h2>
-          <p className="text-muted-foreground">
+          <h2 className="modern-page-title">Litigation Registry</h2>
+          <p className="mt-1 text-sm font-medium text-muted-foreground">
             {filteredCases.length} case{filteredCases.length !== 1 ? 's' : ''} found
           </p>
         </div>
@@ -64,6 +119,31 @@ export function LitigationRegistry({ cases, onAddCase, onViewCase, onEditCase, o
         >
           <Plus className="h-4 w-4" />
           <span>New Case</span>
+        </button>
+      </div>
+
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        <button
+          onClick={() => setViewMode('all')}
+          className={cn(
+            "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+            viewMode === 'all'
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground hover:text-foreground",
+          )}
+        >
+          All Cases
+        </button>
+        <button
+          onClick={() => setViewMode('advisory')}
+          className={cn(
+            "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+            viewMode === 'advisory'
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground hover:text-foreground",
+          )}
+        >
+          Advisory Requests
         </button>
       </div>
 
@@ -126,134 +206,130 @@ export function LitigationRegistry({ cases, onAddCase, onViewCase, onEditCase, o
         </div>
       )}
 
-      {/* Cases Table - Desktop */}
-      <div className="surface-card hidden overflow-hidden md:block">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="table-header">
-                <th className="px-4 py-3 text-left">Suit Number</th>
-                <th className="px-4 py-3 text-left">Case Title</th>
-                <th className="px-4 py-3 text-left">Adversary Party</th>
-                <th className="px-4 py-3 text-left">Stage</th>
-                <th className="px-4 py-3 text-left">Counsel</th>
-                <th className="px-4 py-3 text-left">Next Hearing</th>
-                <th className="px-4 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredCases.map((caseItem, index) => (
-                <tr 
-                  key={caseItem.id} 
-                  className="table-row animate-fade-in"
-                  style={{ animationDelay: `${index * 30}ms` }}
-                >
-                  <td className="px-4 py-4">
-                    <span className="font-medium text-foreground">{caseItem.suitNumber}</span>
-                  </td>
-                  <td className="max-w-[200px] px-4 py-4">
-                    <p className="truncate text-foreground">{caseItem.caseTitle}</p>
-                    <p className="truncate text-xs text-muted-foreground">{caseItem.court}</p>
-                  </td>
-                  <td className="px-4 py-4 text-muted-foreground">
-                    {caseItem.adversaryParty}
-                  </td>
-                  <td className="px-4 py-4">
-                    <span className={`status-pill ${stageColors[caseItem.proceduralStage]}`}>
-                      {caseItem.proceduralStage}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4 text-muted-foreground">
-                    {caseItem.assignedCounsel}
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                      <Calendar className="h-4 w-4" />
-                      <span>
-                        {caseItem.nextHearing.toLocaleDateString('en-NG', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="flex items-center justify-end gap-1">
-                      <button 
-                        onClick={() => onViewCase?.(caseItem)}
-                        className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button 
-                        onClick={() => onEditCase?.(caseItem)}
-                        className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => onDeleteCase?.(caseItem)}
-                        className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {viewMode === 'advisory' && (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {advisoryStatuses.map((status) => {
+            const columnCases = advisoryCases.filter(
+              (caseItem) => normalizeStatus(caseItem.status) === status.key,
+            );
 
-      {/* Cases Cards - Mobile */}
-      <div className="clean-list md:hidden">
+            return (
+              <div
+                key={status.key}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => handleAdvisoryDrop(event, status.key)}
+                className="min-h-64 rounded-xl border border-border bg-card"
+              >
+                <div className="flex items-center justify-between border-b border-border p-3">
+                  <h3 className="text-sm font-semibold text-foreground">
+                    {status.label}
+                  </h3>
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                    {columnCases.length}
+                  </span>
+                </div>
+                <div className="space-y-2 p-3">
+                  {columnCases.length === 0 && (
+                    <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
+                      No advisory requests here.
+                    </p>
+                  )}
+                  {columnCases.map((caseItem) => (
+                    <button
+                      key={caseItem.id}
+                      draggable
+                      onDragStart={(event) =>
+                        event.dataTransfer.setData('text/plain', caseItem.id)
+                      }
+                      onClick={() => onViewCase?.(caseItem)}
+                      className="w-full rounded-lg border border-border bg-background p-3 text-left transition-colors hover:border-accent/60 hover:bg-accent/5"
+                    >
+                      <p className="font-mono text-xs text-muted-foreground">
+                        {caseItem.suitNumber}
+                      </p>
+                      <h4 className="mt-1 line-clamp-2 text-sm font-medium text-foreground">
+                        {caseItem.caseTitle}
+                      </h4>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {viewMode === 'all' && (
+        <>
+
+      <div className="grid gap-3">
         {filteredCases.map((caseItem, index) => (
           <div
             key={caseItem.id} 
-            className="clean-list-row animate-fade-in grid-cols-[1fr_auto]"
+            className="case-modern-row animate-fade-in"
             style={{ animationDelay: `${index * 30}ms` }}
           >
-            <div className="min-w-0">
-              <div className="mb-1 flex flex-wrap items-center gap-2">
-                <span className="font-bold text-foreground">{caseItem.suitNumber}</span>
-                <span className={`status-pill ${stageColors[caseItem.proceduralStage]}`}>
+            <button
+              onClick={() => onViewCase?.(caseItem)}
+              className="grid min-w-0 flex-1 gap-3 text-left md:grid-cols-[10rem_1fr_auto] md:items-center"
+            >
+              <div>
+                <p className="font-mono text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  {caseItem.suitNumber}
+                </p>
+                <span className={`status-pill ${stageColors[caseItem.proceduralStage]} mt-2`}>
                   {caseItem.proceduralStage}
                 </span>
               </div>
-              <h4 className="truncate text-sm font-semibold text-foreground">{caseItem.caseTitle}</h4>
-              <p className="truncate text-xs text-muted-foreground">vs. {caseItem.adversaryParty}</p>
-              <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <User className="h-3.5 w-3.5" />
-                  <span>{caseItem.assignedCounsel.split(' ').slice(-1)[0]}</span>
-                </div>
-                <div className="flex min-w-0 items-center gap-1">
-                  <MapPin className="h-3.5 w-3.5" />
-                  <span className="truncate">{caseItem.court}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-3.5 w-3.5" />
-                  <span>
-                    {caseItem.nextHearing.toLocaleDateString('en-NG', {
-                      month: 'short',
-                      day: 'numeric',
-                    })}
+
+              <div className="min-w-0">
+                  <h4 className="truncate text-base font-extrabold text-foreground">
+                  {caseItem.caseTitle}
+                </h4>
+                <p className="mt-1 truncate text-sm text-muted-foreground">
+                  vs. {caseItem.adversaryParty}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-muted-foreground">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1">
+                    <User className="h-3.5 w-3.5" />
+                    {caseItem.assignedCounsel}
+                  </span>
+                  <span className="inline-flex min-w-0 items-center gap-1 rounded-full bg-muted px-2.5 py-1">
+                    <MapPin className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{caseItem.court}</span>
                   </span>
                 </div>
               </div>
-            </div>
-            <div className="flex items-center gap-1">
-              <button onClick={() => onViewCase?.(caseItem)} className="icon-button">
+
+              <div className="flex items-center gap-2 rounded-2xl bg-background/70 p-3 md:justify-end">
+                <Calendar className="h-4 w-4 text-primary" />
+                <div>
+                  <p className="text-xs font-bold text-muted-foreground">Next date</p>
+                  <p className="text-sm font-extrabold text-foreground">
+                    {caseItem.nextHearing.toLocaleDateString('en-NG', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            <div className="flex shrink-0 items-center gap-1 self-start md:self-center">
+              <button onClick={() => onViewCase?.(caseItem)} className="icon-button" title="View">
                 <Eye className="h-4 w-4" />
               </button>
-              <button onClick={() => onEditCase?.(caseItem)} className="icon-button">
-                <Edit className="h-4 w-4" />
-              </button>
-              <button onClick={() => onDeleteCase?.(caseItem)} className="icon-button hover:bg-destructive/10 hover:text-destructive">
-                <Trash2 className="h-4 w-4" />
-              </button>
+              {caseItem.canEdit && (
+                <button onClick={() => onEditCase?.(caseItem)} className="icon-button" title="Edit">
+                  <Edit className="h-4 w-4" />
+                </button>
+              )}
+              {caseItem.canDelete && (
+                <button onClick={() => onDeleteCase?.(caseItem)} className="icon-button hover:bg-destructive/10 hover:text-destructive" title="Delete">
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
             </div>
           </div>
         ))}
@@ -270,6 +346,8 @@ export function LitigationRegistry({ cases, onAddCase, onViewCase, onEditCase, o
             Try adjusting your search or filter criteria
           </p>
         </div>
+      )}
+        </>
       )}
     </div>
   );

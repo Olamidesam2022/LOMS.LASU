@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { CaseProgressModalProvider } from "@/hooks/useCaseProgressModal";
 import Index from "./pages/Index";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
@@ -62,7 +63,7 @@ const AppRoutes = () => (
       }
     />
     <Route
-      path="/app"
+      path="/app/*"
       element={
         <ProtectedRoute>
           <Index />
@@ -81,7 +82,9 @@ const App = () => (
         <Toaster />
         <BrowserRouter>
           <AuthProvider>
-            <AppRoutes />
+            <CaseProgressModalProvider>
+              <AppRoutes />
+            </CaseProgressModalProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

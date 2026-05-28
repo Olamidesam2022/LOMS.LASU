@@ -67,8 +67,8 @@ export function AdvisoryWorkflow({ requests, onAddRequest, onViewRequest }: Advi
       {/* Header */}
       <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h2 className="text-xl sm:text-2xl font-bold text-foreground">Advisory Workflow</h2>
-          <p className="text-xs sm:text-sm text-muted-foreground">
+          <h2 className="modern-page-title">Advisory Workflow</h2>
+          <p className="mt-1 text-xs font-medium text-muted-foreground sm:text-sm">
             Track legal advice requests from VC Office and Registry
           </p>
         </div>
@@ -148,7 +148,7 @@ export function AdvisoryWorkflow({ requests, onAddRequest, onViewRequest }: Advi
                         </span>
                       </div>
                       
-                      <h4 className="line-clamp-2 text-sm font-semibold text-foreground">
+                      <h4 className="line-clamp-2 text-sm font-extrabold text-foreground">
                         {request.title}
                       </h4>
                       
