@@ -42,6 +42,7 @@ export function Header({
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
+  const mobileSearchRef = useRef<HTMLDivElement>(null);
   const { notifications, markAsRead, markAllAsRead } = useNotifications();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -68,7 +69,9 @@ export function Header({
       }
       if (
         searchRef.current &&
-        !searchRef.current.contains(event.target as Node)
+        !searchRef.current.contains(event.target as Node) &&
+        (!mobileSearchRef.current ||
+          !mobileSearchRef.current.contains(event.target as Node))
       ) {
         setShowSearchResults(false);
       }
@@ -99,6 +102,68 @@ export function Header({
     }
   };
 
+  const renderSearchBox = (
+    ref: React.RefObject<HTMLDivElement>,
+    containerClassName: string,
+    inputClassName: string,
+    dropdownClassName: string,
+  ) => (
+    <div className={containerClassName} ref={ref}>
+      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+      <input
+        type="text"
+        placeholder="Search cases, documents..."
+        value={searchQuery}
+        onChange={handleSearchChange}
+        onFocus={() => setShowSearchResults(true)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" && searchResults[0]) {
+            handleSearchResultSelect(searchResults[0]);
+          }
+          if (event.key === "Escape") {
+            setShowSearchResults(false);
+          }
+        }}
+        className={inputClassName}
+      />
+      {canShowSearchResults && (
+        <div className={dropdownClassName}>
+          {searchResults.length === 0 ? (
+            <div className="p-3 text-sm text-muted-foreground">
+              No matching cases or documents
+            </div>
+          ) : (
+            <div className="max-h-80 overflow-y-auto">
+              {searchResults.map((result) => {
+                const Icon = result.type === "case" ? Scale : FileText;
+                return (
+                  <button
+                    key={`${result.type}-${result.id}`}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => handleSearchResultSelect(result)}
+                    className="flex w-full items-start gap-3 border-b border-border p-3 text-left transition-colors last:border-0 hover:bg-muted/50"
+                  >
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-semibold text-foreground">
+                        {result.title}
+                      </span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {result.subtitle}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <header className="sticky top-0 z-30 border-b border-border/70 bg-background/90 shadow-sm backdrop-blur-xl supports-[backdrop-filter]:bg-background/75 dark:bg-background/80">
       <div className="flex h-16 items-center justify-between px-3 sm:px-4 md:px-6">
@@ -127,60 +192,12 @@ export function Header({
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="relative hidden md:block" ref={searchRef}>
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Search cases, documents..."
-              value={searchQuery}
-              onChange={handleSearchChange}
-              onFocus={() => setShowSearchResults(true)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && searchResults[0]) {
-                  handleSearchResultSelect(searchResults[0]);
-                }
-                if (event.key === "Escape") {
-                  setShowSearchResults(false);
-                }
-              }}
-              className="search-input w-56 lg:w-72 pl-10"
-            />
-            {canShowSearchResults && (
-              <div className="absolute left-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-lg border border-border bg-card shadow-card">
-                {searchResults.length === 0 ? (
-                  <div className="p-3 text-sm text-muted-foreground">
-                    No matching cases or documents
-                  </div>
-                ) : (
-                  <div className="max-h-80 overflow-y-auto">
-                    {searchResults.map((result) => {
-                      const Icon = result.type === "case" ? Scale : FileText;
-                      return (
-                        <button
-                          key={`${result.type}-${result.id}`}
-                          onMouseDown={(event) => event.preventDefault()}
-                          onClick={() => handleSearchResultSelect(result)}
-                          className="flex w-full items-start gap-3 border-b border-border p-3 text-left transition-colors last:border-0 hover:bg-muted/50"
-                        >
-                          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                            <Icon className="h-4 w-4" />
-                          </span>
-                          <span className="min-w-0">
-                            <span className="block truncate text-sm font-semibold text-foreground">
-                              {result.title}
-                            </span>
-                            <span className="block truncate text-xs text-muted-foreground">
-                              {result.subtitle}
-                            </span>
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          {renderSearchBox(
+            searchRef,
+            "relative hidden md:block",
+            "search-input w-56 lg:w-72 pl-10",
+            "absolute left-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-lg border border-border bg-card shadow-card",
+          )}
 
           <div className="relative" ref={notificationRef}>
             <button
@@ -276,6 +293,14 @@ export function Header({
             <UserCircle2 className="h-9 w-9" />
           </div>
         </div>
+      </div>
+      <div className="px-3 pb-3 md:hidden">
+        {renderSearchBox(
+          mobileSearchRef,
+          "relative",
+          "search-input w-full pl-10",
+          "absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-lg border border-border bg-card shadow-card",
+        )}
       </div>
     </header>
   );
