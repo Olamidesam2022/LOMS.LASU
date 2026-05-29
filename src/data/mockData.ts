@@ -20,9 +20,7 @@ export const mockAuditLogs: AuditLog[] = [];
 
 export const mockMetrics: DashboardMetrics = {
   activeLitigation: 0,
-  advisoryBacklog: 0,
   urgentHearings: 0,
   winRate: 0,
   totalCases: 0,
-  pendingAdvisory: 0,
 };

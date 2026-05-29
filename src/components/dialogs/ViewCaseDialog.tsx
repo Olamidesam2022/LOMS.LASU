@@ -28,6 +28,7 @@ const statusColors = {
   Pending: 'bg-warning/10 text-warning',
   Closed: 'bg-muted text-muted-foreground',
   Urgent: 'bg-destructive/10 text-destructive',
+  Archived: 'bg-muted text-muted-foreground',
 };
 
 export function ViewCaseDialog({ open, onOpenChange, caseItem }: ViewCaseDialogProps) {

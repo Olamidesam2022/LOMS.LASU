@@ -127,12 +127,30 @@ export function useDocuments() {
         await supabase.storage.from(DOCUMENT_BUCKET).remove([storagePath]);
         throw error;
       }
+
+      if (input.relatedCase) {
+        const { error: noteError } = await supabase.from("case_notes").insert({
+          case_id: input.relatedCase,
+          content: `Document "${input.name}" was uploaded to this case.`,
+          created_by: user.id,
+          user_id: user.id,
+          is_private: false,
+          note_type: "system",
+        });
+
+        if (noteError) {
+          console.error("Failed to add case document note:", noteError);
+        }
+      }
+
       await writeAuditLog({
         action: "CREATE",
         performedBy: user.id,
-        targetId: data.id,
+        targetId: input.relatedCase || data.id,
         resource: "Document",
-        details: `Uploaded document metadata: ${input.name}`,
+        details: input.relatedCase
+          ? `Uploaded document "${input.name}" to a case`
+          : `Uploaded document metadata: ${input.name}`,
       });
       await fetchDocuments();
     },

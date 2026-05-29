@@ -56,8 +56,7 @@ export function UserManagement({ users, currentUser, onAddUser, onEditUser, onDe
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="modern-page-title">User Management</h2>
-          <p className="mt-1 text-sm font-medium text-muted-foreground">
+          <p className="text-sm font-medium text-muted-foreground">
             Role-based access control (RBAC) administration
           </p>
         </div>

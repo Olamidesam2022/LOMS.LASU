@@ -29,18 +29,18 @@ function getProgressPercent(status?: string | null) {
 export default function ProgressPage() {
   const { openModal } = useCaseProgressModal();
   const { cases, isLoading } = useCases();
+  const activeCases = cases.filter((caseItem) => caseItem.status !== "Archived");
 
   return (
     <div className="space-y-5 p-4 md:p-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="modern-page-title">Progress Bar</h2>
-          <p className="mt-1 text-sm font-medium text-muted-foreground">
+          <p className="text-sm font-medium text-muted-foreground">
             Track each permitted case by stage, date, court, and completion.
           </p>
         </div>
         <div className="rounded-full border border-border bg-background px-3 py-1 text-sm font-semibold text-muted-foreground">
-          {cases.length} case{cases.length === 1 ? "" : "s"}
+          {activeCases.length} case{activeCases.length === 1 ? "" : "s"}
         </div>
       </div>
 
@@ -57,7 +57,7 @@ export default function ProgressPage() {
             <Loader2 className="h-5 w-5 animate-spin" />
             Loading progress...
           </div>
-        ) : cases.length === 0 ? (
+        ) : activeCases.length === 0 ? (
           <div className="flex min-h-56 flex-col items-center justify-center p-6 text-center">
             <Scale className="h-9 w-9 text-muted-foreground" />
             <h3 className="mt-3 text-base font-extrabold text-foreground">
@@ -69,7 +69,7 @@ export default function ProgressPage() {
           </div>
         ) : (
           <div className="grid gap-4 p-4 lg:grid-cols-2">
-            {cases.map((caseItem) => {
+            {activeCases.map((caseItem) => {
               const progressPercent = getProgressPercent(caseItem.status);
               const statusKey = (caseItem.status || "open").toLowerCase();
 

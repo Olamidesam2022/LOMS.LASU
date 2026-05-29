@@ -6,7 +6,13 @@ export type ProceduralStage =
   | "Trial"
   | "Judgment";
 
-export type CaseStatus = "Active" | "In Progress" | "Pending" | "Closed" | "Urgent";
+export type CaseStatus =
+  | "Active"
+  | "In Progress"
+  | "Pending"
+  | "Closed"
+  | "Urgent"
+  | "Archived";
 
 export type AdvisoryStatus = "Pending" | "In Progress" | "Completed" | "Urgent";
 
@@ -81,6 +87,36 @@ export interface AuditLog {
   details: string;
 }
 
+export type CaseTaskStatus = "open" | "in_progress" | "completed";
+export type CaseTaskPriority = "low" | "normal" | "high" | "urgent";
+
+export interface CaseNote {
+  id: string;
+  caseId: string;
+  content: string;
+  createdBy?: string;
+  authorName: string;
+  isPrivate: boolean;
+  noteType: string;
+  createdAt: Date;
+}
+
+export interface CaseTask {
+  id: string;
+  caseId: string;
+  title: string;
+  description?: string;
+  status: CaseTaskStatus;
+  priority: CaseTaskPriority;
+  dueDate?: Date;
+  assignedTo?: string;
+  assigneeName: string;
+  createdBy?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  completedAt?: Date;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -93,9 +129,7 @@ export interface User {
 
 export interface DashboardMetrics {
   activeLitigation: number;
-  advisoryBacklog: number;
   urgentHearings: number;
   winRate: number;
   totalCases: number;
-  pendingAdvisory: number;
 }

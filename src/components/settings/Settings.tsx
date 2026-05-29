@@ -8,6 +8,8 @@ import {
   Eye,
   EyeOff,
   Save,
+  CheckCircle2,
+  AlertCircle,
   RotateCcw,
 } from "lucide-react";
 import { User } from "@/types/legal";
@@ -26,6 +28,7 @@ export function Settings({ currentUser }: SettingsProps) {
   const [hearingReminders, setHearingReminders] = useState(true);
   const [deadlineAlerts, setDeadlineAlerts] = useState(true);
   const [showApiKey, setShowApiKey] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saved" | "failed">("idle");
 
   useEffect(() => {
     try {
@@ -47,16 +50,25 @@ export function Settings({ currentUser }: SettingsProps) {
   }, [storageKey]);
 
   const handleSave = () => {
-    localStorage.setItem(
-      storageKey,
-      JSON.stringify({
-        emailNotifications,
-        pushNotifications,
-        hearingReminders,
-        deadlineAlerts,
-      }),
-    );
-    toast.success("Settings saved successfully");
+    try {
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify({
+          emailNotifications,
+          pushNotifications,
+          hearingReminders,
+          deadlineAlerts,
+        }),
+      );
+      setSaveStatus("saved");
+      toast.success("Settings saved successfully");
+      window.setTimeout(() => setSaveStatus("idle"), 2500);
+    } catch (error: any) {
+      setSaveStatus("failed");
+      toast.error("Could not save settings", {
+        description: error.message || "Please try again.",
+      });
+    }
   };
 
   const handleReset = () => {
@@ -73,7 +85,9 @@ export function Settings({ currentUser }: SettingsProps) {
         deadlineAlerts: true,
       }),
     );
+    setSaveStatus("saved");
     toast.info("Settings reset to defaults");
+    window.setTimeout(() => setSaveStatus("idle"), 2500);
   };
 
   const handleChangePassword = async () => {
@@ -96,12 +110,28 @@ export function Settings({ currentUser }: SettingsProps) {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Settings</h2>
-          <p className="text-muted-foreground">
+          <p className="text-sm font-medium text-muted-foreground">
             Manage your application preferences
           </p>
         </div>
         <div className="flex gap-2">
+          {saveStatus !== "idle" && (
+            <div
+              className={cn(
+                "hidden items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold sm:flex",
+                saveStatus === "saved"
+                  ? "bg-success/10 text-success"
+                  : "bg-destructive/10 text-destructive",
+              )}
+            >
+              {saveStatus === "saved" ? (
+                <CheckCircle2 className="h-4 w-4" />
+              ) : (
+                <AlertCircle className="h-4 w-4" />
+              )}
+              {saveStatus === "saved" ? "Saved" : "Save failed"}
+            </div>
+          )}
           <button
             onClick={handleReset}
             className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"

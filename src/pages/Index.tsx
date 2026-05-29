@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import {
   LitigationCase,
@@ -7,14 +7,14 @@ import {
   User as LegacyUser,
 } from "@/types/legal";
 import { useAuth } from "@/contexts/AuthContext";
-import { toLitigationCase, useCases } from "@/hooks/useCases";
+import { useCases } from "@/hooks/useCases";
 import { useProfiles } from "@/hooks/useProfiles";
 import { useAdvisoryRequests } from "@/hooks/useAdvisoryRequests";
 import { useAuditLogs } from "@/hooks/useAuditLogs";
 import { useDocuments } from "@/hooks/useDocuments";
 import { supabase } from "@/integrations/supabase/client";
 import { Sidebar } from "@/components/layout/Sidebar";
-import { Header } from "@/components/layout/Header";
+import { Header, HeaderSearchResult } from "@/components/layout/Header";
 import { Dashboard } from "@/components/dashboard/Dashboard";
 import { LitigationRegistry } from "@/components/litigation/LitigationRegistry";
 import { AdvisoryWorkflow } from "@/components/advisory/AdvisoryWorkflow";
@@ -23,6 +23,7 @@ import { AuditTrail } from "@/components/audit/AuditTrail";
 import { UserManagement } from "@/components/users/UserManagement";
 import { Settings } from "@/components/settings/Settings";
 import { CalendarView } from "@/components/calendar/CalendarView";
+import { ArchiveView } from "@/components/archive/ArchiveView";
 import ProgressPage from "@/pages/ProgressPage";
 import { AddCaseDialog } from "@/components/dialogs/AddCaseDialog";
 import { AddAdvisoryDialog } from "@/components/dialogs/AddAdvisoryDialog";
@@ -44,6 +45,7 @@ const viewTitles: Record<string, string> = {
   documents: "Document Vault",
   calendar: "Court Calendar",
   progress: "Progress",
+  archive: "Archive",
   audit: "Audit Trail",
   users: "User Management",
   unauthorized: "Unauthorized",
@@ -59,6 +61,7 @@ const Index = () => {
     if (pathname.startsWith("/app/documents")) return "documents";
     if (pathname.startsWith("/app/calendar")) return "calendar";
     if (pathname.startsWith("/app/progress")) return "progress";
+    if (pathname.startsWith("/app/archive")) return "archive";
     if (pathname.startsWith("/app/cases")) return "litigation";
     if (pathname.startsWith("/app/audit")) return "audit";
     if (pathname.startsWith("/app/users")) return role === "superadmin" ? "users" : "unauthorized";
@@ -68,10 +71,9 @@ const Index = () => {
   const [activeView, setActiveView] = useState(getViewFromPath(location.pathname));
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [globalSearchQuery, setGlobalSearchQuery] = useState("");
   const mainContentRef = useRef<HTMLDivElement>(null);
   const { cases, metrics, createCase, updateCase, deleteCase } = useCases();
-  const [allCasesEnabled, setAllCasesEnabled] = useState(false);
-  const [allCases, setAllCases] = useState<LitigationCase[]>([]);
   const { advisoryRequests, createAdvisoryRequest } = useAdvisoryRequests();
   const { documents, createDocument, downloadDocument, deleteDocument } = useDocuments();
   const { auditLogs } = useAuditLogs();
@@ -114,12 +116,12 @@ const Index = () => {
     const match = location.pathname.match(/^\/app\/cases\/([^/]+)\/edit$/);
     if (!match?.[1]) return;
 
-    const caseItem = [...allCases, ...cases].find((item) => item.id === match[1]);
+    const caseItem = cases.find((item) => item.id === match[1]);
     if (caseItem) {
       setSelectedCase(caseItem);
       setAddCaseOpen(true);
     }
-  }, [allCases, cases, location.pathname]);
+  }, [cases, location.pathname]);
 
   // Swipe gestures for mobile sidebar
   useSwipeGesture(mainContentRef, {
@@ -155,6 +157,7 @@ const Index = () => {
       documents: "/app/documents",
       calendar: "/app/calendar",
       progress: "/app/progress",
+      archive: "/app/archive",
       audit: "/app/audit",
       users: "/app/users",
       settings: "/app/settings",
@@ -165,40 +168,6 @@ const Index = () => {
   const handleEditCase = (caseItem: LitigationCase) => {
     setSelectedCase(caseItem);
     setAddCaseOpen(true);
-  };
-
-  const handleAllCasesToggle = async (enabled: boolean) => {
-    setAllCasesEnabled(enabled);
-
-    if (!enabled) {
-      setAllCases([]);
-      toast.info("Showing your assigned and granted cases.");
-      return;
-    }
-
-    if (role !== "superadmin") {
-      toast.error("Only superadmin can view all cases.");
-      return;
-    }
-
-    const { data, error } = await supabase.functions.invoke("admin-all-cases", {
-      body: { enabled: true },
-    });
-
-    if (error) {
-      setAllCasesEnabled(false);
-      toast.error("Unable to load all cases", {
-        description: error.message,
-      });
-      return;
-    }
-
-    setAllCases(
-      ((data?.cases || []) as any[]).map((row) =>
-        toLitigationCase(row, { id: user?.id || "", role }),
-      ),
-    );
-    toast.success("Showing all cases.");
   };
 
   const handleDeleteCase = async (caseItem: LitigationCase) => {
@@ -350,7 +319,78 @@ const Index = () => {
     department: "Legal",
   };
 
-  const displayCases = allCasesEnabled ? allCases : cases;
+  const displayCases = cases;
+  const activeCases = useMemo(
+    () => displayCases.filter((caseItem) => caseItem.status !== "Archived"),
+    [displayCases],
+  );
+  const archivedCases = useMemo(
+    () => displayCases.filter((caseItem) => caseItem.status === "Archived"),
+    [displayCases],
+  );
+  const globalSearchResults = useMemo<HeaderSearchResult[]>(() => {
+    const query = globalSearchQuery.trim().toLowerCase();
+    if (query.length < 2) return [];
+
+    const caseResults = displayCases
+      .filter((caseItem) =>
+        [
+          caseItem.suitNumber,
+          caseItem.caseTitle,
+          caseItem.adversaryParty,
+          caseItem.assignedCounsel,
+          caseItem.court,
+        ]
+          .filter(Boolean)
+          .some((value) => value.toLowerCase().includes(query)),
+      )
+      .slice(0, 4)
+      .map((caseItem) => ({
+        id: caseItem.id,
+        type: "case" as const,
+        title: caseItem.suitNumber,
+        subtitle: caseItem.caseTitle,
+      }));
+
+    const documentResults = documents
+      .filter((doc) => {
+        const relatedCase = doc.caseId
+          ? displayCases.find((caseItem) => caseItem.id === doc.caseId)
+          : undefined;
+        return [doc.name, doc.type, doc.uploadedBy, relatedCase?.suitNumber]
+          .filter(Boolean)
+          .some((value) => value.toLowerCase().includes(query));
+      })
+      .slice(0, 4)
+      .map((doc) => ({
+        id: doc.id,
+        type: "document" as const,
+        title: doc.name,
+        subtitle: `${doc.type} - uploaded by ${doc.uploadedBy}`,
+      }));
+
+    return [...caseResults, ...documentResults].slice(0, 6);
+  }, [displayCases, documents, globalSearchQuery]);
+
+  const handleSearchResultSelect = (result: HeaderSearchResult) => {
+    if (result.type === "case") {
+      const caseItem = displayCases.find((item) => item.id === result.id);
+      if (caseItem) {
+        openModal(caseItem.id);
+        return;
+      }
+      toast.error("Case is no longer available.");
+      return;
+    }
+
+    const document = documents.find((doc) => doc.id === result.id);
+    if (document) {
+      setSelectedDocument(document);
+      setViewDocumentOpen(true);
+      return;
+    }
+    toast.error("Document is no longer available.");
+  };
 
   // Render the current view
   const renderView = () => {
@@ -359,8 +399,7 @@ const Index = () => {
         return (
           <Dashboard
             metrics={metrics}
-            cases={displayCases}
-            advisoryRequests={advisoryRequests}
+            cases={activeCases}
             auditLogs={auditLogs}
             onNavigate={handleViewChange}
           />
@@ -368,7 +407,7 @@ const Index = () => {
       case "litigation":
         return (
           <LitigationRegistry
-            cases={displayCases}
+            cases={activeCases}
             onAddCase={() => setAddCaseOpen(true)}
             onViewCase={handleViewCase}
             onEditCase={handleEditCase}
@@ -396,6 +435,14 @@ const Index = () => {
         );
       case "progress":
         return <ProgressPage />;
+      case "archive":
+        return (
+          <ArchiveView
+            cases={archivedCases}
+            documents={documents}
+            onViewCase={handleViewCase}
+          />
+        );
       case "audit":
         return <AuditTrail logs={auditLogs} />;
       case "users":
@@ -421,13 +468,12 @@ const Index = () => {
       case "settings":
         return <Settings currentUser={currentUser} />;
       case "calendar":
-        return <CalendarView cases={displayCases} onViewCase={handleViewCase} />;
+        return <CalendarView cases={activeCases} onViewCase={handleViewCase} />;
       default:
         return (
           <Dashboard
             metrics={metrics}
-            cases={displayCases}
-            advisoryRequests={advisoryRequests}
+            cases={activeCases}
             auditLogs={auditLogs}
             onNavigate={handleViewChange}
           />
@@ -450,7 +496,6 @@ const Index = () => {
         onClose={() => setSidebarOpen(false)}
         collapsed={sidebarCollapsed}
         onCollapsedChange={setSidebarCollapsed}
-        onAllCasesToggle={handleAllCasesToggle}
       />
 
       {/* Main Content */}
@@ -463,8 +508,9 @@ const Index = () => {
           currentUser={currentUser}
           title={viewTitles[activeView] || "Dashboard"}
           onMenuToggle={() => setSidebarOpen(true)}
-          onSidebarToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-          sidebarCollapsed={sidebarCollapsed}
+          onSearch={setGlobalSearchQuery}
+          searchResults={globalSearchResults}
+          onSearchResultSelect={handleSearchResultSelect}
         />
         <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background">
           {renderView()}
@@ -491,6 +537,7 @@ const Index = () => {
       <UploadDocumentDialog
         open={uploadDocumentOpen}
         onOpenChange={setUploadDocumentOpen}
+        cases={displayCases}
         onUploadDocument={createDocument}
       />
       <AddUserDialog

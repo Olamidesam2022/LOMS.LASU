@@ -108,8 +108,7 @@ export function LitigationRegistry({ cases, onAddCase, onViewCase, onEditCase, o
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="modern-page-title">Litigation Registry</h2>
-          <p className="mt-1 text-sm font-medium text-muted-foreground">
+          <p className="text-sm font-medium text-muted-foreground">
             {filteredCases.length} case{filteredCases.length !== 1 ? 's' : ''} found
           </p>
         </div>

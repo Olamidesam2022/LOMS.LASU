@@ -17,14 +17,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Upload, File, X } from 'lucide-react';
-import { DocumentType } from '@/types/legal';
+import { AlertCircle, Upload, File, X } from 'lucide-react';
+import { DocumentType, LitigationCase } from '@/types/legal';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 interface UploadDocumentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  cases?: LitigationCase[];
   onUploadDocument?: (input: {
     name: string;
     type: DocumentType;
@@ -33,7 +34,12 @@ interface UploadDocumentDialogProps {
   }) => Promise<void>;
 }
 
-export function UploadDocumentDialog({ open, onOpenChange, onUploadDocument }: UploadDocumentDialogProps) {
+export function UploadDocumentDialog({
+  open,
+  onOpenChange,
+  cases = [],
+  onUploadDocument,
+}: UploadDocumentDialogProps) {
   const [formData, setFormData] = useState({
     name: '',
     type: '' as DocumentType | '',
@@ -41,7 +47,8 @@ export function UploadDocumentDialog({ open, onOpenChange, onUploadDocument }: U
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'failed'>('idle');
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (file: File) => {
@@ -66,7 +73,8 @@ export function UploadDocumentDialog({ open, onOpenChange, onUploadDocument }: U
       return;
     }
 
-    setIsLoading(true);
+    setUploadStatus('uploading');
+    setUploadError(null);
     try {
       await onUploadDocument?.({
         name: formData.name,
@@ -80,19 +88,24 @@ export function UploadDocumentDialog({ open, onOpenChange, onUploadDocument }: U
       
       setFormData({ name: '', type: '', relatedCase: '' });
       setSelectedFile(null);
+      setUploadStatus('idle');
       onOpenChange(false);
     } catch (error: any) {
+      const message = error.message || 'Please try again.';
+      setUploadStatus('failed');
+      setUploadError(message);
       toast.error('Failed to upload document', {
-        description: error.message || 'Please try again.',
+        description: message,
       });
-    } finally {
-      setIsLoading(false);
+      window.setTimeout(() => setUploadStatus('idle'), 2500);
     }
   };
 
   const resetForm = () => {
     setFormData({ name: '', type: '', relatedCase: '' });
     setSelectedFile(null);
+    setUploadStatus('idle');
+    setUploadError(null);
   };
 
   return (
@@ -194,20 +207,46 @@ export function UploadDocumentDialog({ open, onOpenChange, onUploadDocument }: U
 
           <div className="space-y-2">
             <Label htmlFor="relatedCase">Related Case (Optional)</Label>
-            <Input
-              id="relatedCase"
-              placeholder="e.g., FHC/L/CS/001/2024"
+            <Select
               value={formData.relatedCase}
-              onChange={(e) => setFormData(prev => ({ ...prev, relatedCase: e.target.value }))}
-            />
+              onValueChange={(value) =>
+                setFormData(prev => ({
+                  ...prev,
+                  relatedCase: value === 'none' ? '' : value,
+                }))
+              }
+            >
+              <SelectTrigger id="relatedCase">
+                <SelectValue placeholder="Select a case" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No related case</SelectItem>
+                {cases.map((caseItem) => (
+                  <SelectItem key={caseItem.id} value={caseItem.id}>
+                    {caseItem.suitNumber} - {caseItem.caseTitle}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+
+          {uploadStatus === 'failed' && uploadError && (
+            <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{uploadError}</span>
+            </div>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!selectedFile || isLoading}>
-              {isLoading ? 'Uploading...' : 'Upload Document'}
+            <Button type="submit" disabled={!selectedFile || uploadStatus === 'uploading'}>
+              {uploadStatus === 'uploading'
+                ? 'Uploading...'
+                : uploadStatus === 'failed'
+                  ? 'Upload Failed'
+                  : 'Upload Document'}
             </Button>
           </DialogFooter>
         </form>

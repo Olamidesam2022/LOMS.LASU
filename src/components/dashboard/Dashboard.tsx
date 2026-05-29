@@ -1,9 +1,7 @@
-import { CalendarDays, CheckCircle2, FileText, Scale, Users } from "lucide-react";
-import { RiskMonitor } from "./RiskMonitor";
+import { CalendarDays, FileText, Scale, Users } from "lucide-react";
 import { RecentActivity } from "./RecentActivity";
 import {
   LitigationCase,
-  AdvisoryRequest,
   AuditLog,
   DashboardMetrics,
 } from "@/types/legal";
@@ -15,7 +13,6 @@ import { toast } from "sonner";
 interface DashboardProps {
   metrics: DashboardMetrics;
   cases: LitigationCase[];
-  advisoryRequests: AdvisoryRequest[];
   auditLogs: AuditLog[];
   onNavigate?: (view: string) => void;
 }
@@ -30,7 +27,6 @@ const quickLinks = [
 export function Dashboard({
   metrics,
   cases,
-  advisoryRequests,
   auditLogs,
   onNavigate,
 }: DashboardProps) {
@@ -42,10 +38,6 @@ export function Dashboard({
     isLoading,
     error,
   } = usePendingApprovals();
-  const pendingAdvisory = advisoryRequests.filter(
-    (r) => r.status === "Pending" || r.status === "Urgent",
-  ).length;
-  const urgentAdvisory = advisoryRequests.filter((r) => r.status === "Urgent").length;
   const canViewAudit = role === "superadmin" || role === "admin";
   const upcomingCases = cases
     .filter((c) => c.nextHearing > new Date())
@@ -121,17 +113,17 @@ export function Dashboard({
           <div className="dashboard-stat-card pastel-cyan">
             <div className="flex items-center justify-between">
               <span className="dashboard-stat-icon">
-                <FileText className="h-4 w-4" />
+                <CalendarDays className="h-4 w-4" />
               </span>
-              <span className="dashboard-mini-pill">{urgentAdvisory} urgent</span>
+              <span className="dashboard-mini-pill">{upcomingCases.length} scheduled</span>
             </div>
-            <p className="mt-4 text-sm font-extrabold text-foreground">Data transfer</p>
+            <p className="mt-4 text-sm font-extrabold text-foreground">Hearing watch</p>
             <div className="mt-2 flex items-end gap-2">
               <span className="text-4xl font-black tracking-tight text-foreground">
-                {pendingAdvisory}
+                {metrics.urgentHearings}
               </span>
               <span className="pb-1 text-sm font-semibold text-muted-foreground">
-                advisory backlog
+                due within 72 hours
               </span>
             </div>
             <div className="mt-4 flex gap-2">
@@ -140,7 +132,9 @@ export function Dashboard({
                   key={index}
                   className={cn(
                     "h-7 flex-1 rounded-md",
-                    index < 4 ? "bg-slate-400/35" : "border border-dashed border-slate-300/80",
+                    index < Math.min(metrics.urgentHearings, 7)
+                      ? "bg-cyan-500/35"
+                      : "border border-dashed border-slate-300/80",
                   )}
                 />
               ))}
@@ -227,8 +221,6 @@ export function Dashboard({
           </div>
         </div>
       </section>
-
-      <RiskMonitor cases={cases} />
 
       <RecentActivity
         logs={auditLogs}

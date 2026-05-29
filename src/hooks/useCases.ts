@@ -206,20 +206,20 @@ export function useCases() {
   }, [fetchCases]);
 
   const metrics = useMemo<DashboardMetrics>(() => {
-    const activeCases = cases.filter((caseItem) => caseItem.status !== "Closed");
+    const activeCases = cases.filter(
+      (caseItem) => !["Closed", "Archived"].includes(caseItem.status),
+    );
     const now = new Date();
     const soon = new Date(now.getTime() + 72 * 60 * 60 * 1000);
 
     return {
       activeLitigation: activeCases.length,
-      advisoryBacklog: 0,
-      urgentHearings: cases.filter(
+      urgentHearings: activeCases.filter(
         (caseItem) =>
           caseItem.nextHearing >= now && caseItem.nextHearing <= soon,
       ).length,
       winRate: 0,
-      totalCases: cases.length,
-      pendingAdvisory: 0,
+      totalCases: activeCases.length,
     };
   }, [cases]);
 

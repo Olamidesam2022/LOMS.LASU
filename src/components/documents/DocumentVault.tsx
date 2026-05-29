@@ -85,8 +85,7 @@ export function DocumentVault({ documents, cases = [], onUpload, onViewDocument,
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="modern-page-title">Document Vault</h2>
-          <p className="mt-1 text-sm font-medium text-muted-foreground">
+          <p className="text-sm font-medium text-muted-foreground">
             Secure digital archive with version control
           </p>
         </div>
@@ -129,6 +128,8 @@ export function DocumentVault({ documents, cases = [], onUpload, onViewDocument,
                 "rounded-md p-2 transition-colors",
                 viewMode === 'grid' ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
               )}
+              title="Landscape view"
+              aria-label="Landscape view"
             >
               <Grid className="h-4 w-4" />
             </button>
@@ -138,6 +139,8 @@ export function DocumentVault({ documents, cases = [], onUpload, onViewDocument,
                 "rounded-md p-2 transition-colors",
                 viewMode === 'list' ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
               )}
+              title="List view"
+              aria-label="List view"
             >
               <List className="h-4 w-4" />
             </button>

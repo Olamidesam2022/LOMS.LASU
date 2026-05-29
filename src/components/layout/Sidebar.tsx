@@ -10,6 +10,7 @@ import {
   LogOut,
   CalendarDays,
   Activity,
+  Archive,
   UserCircle2,
   X,
 } from "lucide-react";
@@ -27,7 +28,6 @@ interface SidebarProps {
   onClose?: () => void;
   collapsed?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
-  onAllCasesToggle?: (enabled: boolean) => void;
 }
 
 interface NavItem {
@@ -74,6 +74,12 @@ const navItems: NavItem[] = [
     icon: Activity,
     roles: ["superadmin", "admin", "staff"],
   },
+  {
+    id: "archive",
+    label: "Archive",
+    icon: Archive,
+    roles: ["superadmin", "admin", "staff"],
+  },
   { id: "audit", label: "Audit Trail", icon: ClipboardList, roles: ["superadmin", "admin"] },
   { id: "users", label: "User Management", icon: Users, roles: ["superadmin"] },
   {
@@ -93,10 +99,8 @@ export function Sidebar({
   onClose,
   collapsed = false,
   onCollapsedChange,
-  onAllCasesToggle,
 }: SidebarProps) {
   const [overdueCount, setOverdueCount] = useState(0);
-  const [allCasesEnabled, setAllCasesEnabled] = useState(false);
 
   const filteredNavItems = navItems.filter((item) =>
     item.roles.includes(currentUser.role),
@@ -105,6 +109,14 @@ export function Sidebar({
   const handleNavClick = (viewId: string) => {
     onViewChange(viewId);
     if (onClose) onClose();
+  };
+
+  const handleBrandClick = () => {
+    if (isOpen && onClose) {
+      onClose();
+      return;
+    }
+    onCollapsedChange?.(!collapsed);
   };
 
   // Prevent body scroll when mobile sidebar is open
@@ -151,12 +163,6 @@ export function Sidebar({
     };
   }, []);
 
-  const handleAllCasesToggle = async () => {
-    const nextValue = !allCasesEnabled;
-    setAllCasesEnabled(nextValue);
-    onAllCasesToggle?.(nextValue);
-  };
-
   return (
     <>
       {/* Mobile Overlay */}
@@ -170,7 +176,7 @@ export function Sidebar({
       {/* Sidebar */}
       <aside
         className={cn(
-          "glass-sidebar fixed left-0 top-0 z-50 flex h-screen flex-col transition-all duration-300 ease-in-out",
+          "glass-sidebar fixed left-0 top-0 z-50 flex h-dvh max-h-dvh flex-col overflow-hidden transition-all duration-300 ease-in-out",
           // Mobile: Full width drawer, hidden by default
           "w-80",
           // Mobile display
@@ -184,7 +190,7 @@ export function Sidebar({
         )}
       >
         {/* Header */}
-        <div className="flex h-16 items-center justify-between border-b border-sidebar-border/80 px-3">
+        <div className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border/80 px-3">
           {/* Mobile close button */}
           <button
             onClick={onClose}
@@ -194,17 +200,29 @@ export function Sidebar({
           </button>
 
           {(!collapsed || isOpen) && (
-            <BrandLogo className="animate-fade-in" />
+            <button
+              type="button"
+              onClick={handleBrandClick}
+              className="rounded-lg text-left transition-opacity hover:opacity-80"
+              aria-label={isOpen ? "Close sidebar" : "Toggle sidebar"}
+            >
+              <BrandLogo className="animate-fade-in" />
+            </button>
           )}
           {collapsed && !isOpen && (
-            <div className="app-brand-mark mx-auto hidden h-10 w-10 md:flex">
+            <button
+              type="button"
+              onClick={handleBrandClick}
+              className="app-brand-mark mx-auto hidden h-10 w-10 md:flex"
+              aria-label="Expand sidebar"
+            >
               <span aria-hidden="true" />
-            </div>
+            </button>
           )}
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto p-3 scrollbar-thin">
+        <nav className="min-h-0 flex-1 overflow-y-auto p-3 scrollbar-thin">
           <ul className="space-y-1.5">
             {filteredNavItems.map((item) => {
               const Icon = item.icon;
@@ -239,29 +257,10 @@ export function Sidebar({
               );
             })}
           </ul>
-          {(currentUser.role === "superadmin" || currentUser.role === "admin") &&
-            (!collapsed || isOpen) && (
-              <div className="mt-3 rounded-lg border border-sidebar-border bg-sidebar-accent/40 p-2.5">
-                <label className="flex cursor-pointer items-center justify-between gap-3 text-sm text-sidebar-foreground">
-                  <span className="text-xs font-semibold leading-tight">
-                    All Cases
-                    <span className="block text-xs text-sidebar-foreground/60">
-                      Admin-wide view
-                    </span>
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={allCasesEnabled}
-                    onChange={handleAllCasesToggle}
-                    className="h-4 w-4 accent-current"
-                  />
-                </label>
-              </div>
-            )}
         </nav>
 
         {/* Footer */}
-        <div className="shrink-0 border-t border-sidebar-border p-2.5">
+        <div className="shrink-0 border-t border-sidebar-border bg-sidebar p-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))]">
           {/* User Info */}
           <div
             className={cn(

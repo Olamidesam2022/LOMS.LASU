@@ -238,6 +238,7 @@ export function AddCaseDialog({ open, onOpenChange, onCreateCase, caseItem }: Ad
                   <SelectItem value="Pending">Pending</SelectItem>
                   <SelectItem value="Closed">Closed</SelectItem>
                   <SelectItem value="Urgent">Urgent</SelectItem>
+                  <SelectItem value="Archived">Archived</SelectItem>
                 </SelectContent>
               </Select>
             </div>

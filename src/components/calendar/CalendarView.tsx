@@ -124,8 +124,7 @@ export function CalendarView({ cases, onViewCase }: CalendarViewProps) {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h2 className="modern-page-title">Court Calendar</h2>
-          <p className="mt-1 text-xs font-medium text-muted-foreground sm:text-sm">View and manage hearing schedules</p>
+          <p className="text-xs font-medium text-muted-foreground sm:text-sm">View and manage hearing schedules</p>
         </div>
         <div className="flex items-center">
           <div className="flex rounded-lg border border-border bg-card overflow-hidden">
