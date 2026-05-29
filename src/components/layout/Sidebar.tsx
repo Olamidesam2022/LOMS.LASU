@@ -190,20 +190,12 @@ export function Sidebar({
         )}
       >
         {/* Header */}
-        <div className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border/80 px-3">
-          {/* Mobile close button */}
-          <button
-            onClick={onClose}
-            className="rounded-lg p-2 text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground md:hidden"
-          >
-            <X className="h-5 w-5" />
-          </button>
-
+        <div className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-sidebar-border/80 px-3">
           {(!collapsed || isOpen) && (
             <button
               type="button"
               onClick={handleBrandClick}
-              className="rounded-lg text-left transition-opacity hover:opacity-80"
+              className="min-w-0 rounded-lg text-left transition-opacity hover:opacity-80"
               aria-label={isOpen ? "Close sidebar" : "Toggle sidebar"}
             >
               <BrandLogo className="animate-fade-in" />
@@ -219,6 +211,15 @@ export function Sidebar({
               <span aria-hidden="true" />
             </button>
           )}
+
+          {/* Mobile close button */}
+          <button
+            onClick={onClose}
+            className="ml-auto rounded-lg p-2 text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground md:hidden"
+            aria-label="Close sidebar"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
 
         {/* Navigation */}
