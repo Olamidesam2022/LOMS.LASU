@@ -35,7 +35,7 @@ import { ViewDocumentDialog } from "@/components/dialogs/ViewDocumentDialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useSwipeGesture } from "@/hooks/use-swipe-gesture";
-import { Shield } from "lucide-react";
+import { Loader2, Shield } from "lucide-react";
 import { useCaseProgressModal } from "@/hooks/useCaseProgressModal";
 
 const viewTitles: Record<string, string> = {
@@ -72,6 +72,7 @@ const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [globalSearchQuery, setGlobalSearchQuery] = useState("");
+  const [isPageLoading, setIsPageLoading] = useState(false);
   const mainContentRef = useRef<HTMLDivElement>(null);
   const { cases, metrics, createCase, updateCase, deleteCase } = useCases();
   const { advisoryRequests, createAdvisoryRequest } = useAdvisoryRequests();
@@ -104,6 +105,12 @@ const Index = () => {
   useEffect(() => {
     setActiveView(getViewFromPath(location.pathname));
   }, [location.pathname]);
+
+  useEffect(() => {
+    setIsPageLoading(true);
+    const timeout = window.setTimeout(() => setIsPageLoading(false), 650);
+    return () => window.clearTimeout(timeout);
+  }, [activeView]);
 
   useEffect(() => {
     const match = location.pathname.match(/^\/app\/cases\/([^/]+)$/);
@@ -513,7 +520,25 @@ const Index = () => {
           onSearchResultSelect={handleSearchResultSelect}
         />
         <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background">
-          {renderView()}
+          {isPageLoading ? (
+            <div className="flex min-h-[calc(100vh-8rem)] animate-fade-in items-center justify-center p-6">
+              <div className="flex flex-col items-center gap-3 text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-foreground">
+                    Loading {viewTitles[activeView] || "page"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Preparing your workspace...
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            renderView()
+          )}
         </main>
       </div>
 
