@@ -8,7 +8,9 @@ import {
   AlertCircle,
   CheckCircle2,
   Loader2,
-  ArrowRight
+  ArrowRight,
+  Pencil,
+  Trash2
 } from 'lucide-react';
 import { AdvisoryRequest, AdvisoryStatus } from '@/types/legal';
 import { cn } from '@/lib/utils';
@@ -17,6 +19,8 @@ interface AdvisoryWorkflowProps {
   requests: AdvisoryRequest[];
   onAddRequest?: () => void;
   onViewRequest?: (request: AdvisoryRequest) => void;
+  onEditRequest?: (request: AdvisoryRequest) => void;
+  onDeleteRequest?: (request: AdvisoryRequest) => void;
 }
 
 const statusConfig: Record<AdvisoryStatus, { icon: React.ElementType; color: string; bgColor: string }> = {
@@ -33,7 +37,13 @@ const priorityColors = {
   Critical: 'bg-destructive/10 text-destructive',
 };
 
-export function AdvisoryWorkflow({ requests, onAddRequest, onViewRequest }: AdvisoryWorkflowProps) {
+export function AdvisoryWorkflow({
+  requests,
+  onAddRequest,
+  onViewRequest,
+  onEditRequest,
+  onDeleteRequest,
+}: AdvisoryWorkflowProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<AdvisoryStatus | 'all'>('all');
 
@@ -132,60 +142,84 @@ export function AdvisoryWorkflow({ requests, onAddRequest, onViewRequest }: Advi
                   const daysRemaining = getDaysRemaining(request.dueDate);
                   
                   return (
-                    <button
+                    <div
                       key={request.id}
-                      onClick={() => onViewRequest?.(request)}
                       className="clean-list-row animate-fade-in"
                       style={{ animationDelay: `${index * 50}ms` }}
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="truncate text-xs font-bold text-muted-foreground">
-                          {request.requestNumber}
-                        </span>
-                        <span className={cn("status-pill flex-shrink-0", priorityColors[request.priority])}>
-                          {request.priority}
-                        </span>
-                      </div>
-                      
-                      <h4 className="line-clamp-2 text-sm font-extrabold text-foreground">
-                        {request.title}
-                      </h4>
-                      
-                      <div className="grid gap-1 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Building2 className="h-3 w-3 flex-shrink-0" />
-                          <span className="truncate">{request.department}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <User className="h-3 w-3 flex-shrink-0" />
-                          <span className="truncate">{request.requestedBy}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3 flex-shrink-0" />
-                          <span className={cn(
-                            daysRemaining <= 1 && status !== 'Completed' && "text-destructive font-medium"
-                          )}>
-                            {status === 'Completed' 
-                              ? 'Completed'
-                              : daysRemaining < 0 
-                                ? `Overdue ${Math.abs(daysRemaining)}d`
-                                : daysRemaining === 0 
-                                  ? 'Due today'
-                                  : `${daysRemaining}d left`
-                            }
+                      <button
+                        type="button"
+                        onClick={() => onViewRequest?.(request)}
+                        className="grid w-full gap-2 text-left"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="truncate text-xs font-bold text-muted-foreground">
+                            {request.requestNumber}
+                          </span>
+                          <span className={cn("status-pill flex-shrink-0", priorityColors[request.priority])}>
+                            {request.priority}
                           </span>
                         </div>
-                      </div>
 
-                      {request.assignedTo && (
-                        <div className="flex items-center justify-between pt-1">
-                          <span className="truncate text-xs text-muted-foreground">
-                            {request.assignedTo.split(' ').slice(-1)[0]}
-                          </span>
-                          <ArrowRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                        <h4 className="line-clamp-2 text-sm font-extrabold text-foreground">
+                          {request.title}
+                        </h4>
+
+                        <div className="grid gap-1 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Building2 className="h-3 w-3 flex-shrink-0" />
+                            <span className="truncate">{request.department}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <User className="h-3 w-3 flex-shrink-0" />
+                            <span className="truncate">{request.requestedBy}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3 flex-shrink-0" />
+                            <span className={cn(
+                              daysRemaining <= 1 && status !== 'Completed' && "text-destructive font-medium"
+                            )}>
+                              {status === 'Completed'
+                                ? 'Completed'
+                                : daysRemaining < 0
+                                  ? `Overdue ${Math.abs(daysRemaining)}d`
+                                  : daysRemaining === 0
+                                    ? 'Due today'
+                                    : `${daysRemaining}d left`
+                              }
+                            </span>
+                          </div>
                         </div>
-                      )}
-                    </button>
+
+                        {request.assignedTo && (
+                          <div className="flex items-center justify-between pt-1">
+                            <span className="truncate text-xs text-muted-foreground">
+                              {request.assignedTo.split(' ').slice(-1)[0]}
+                            </span>
+                            <ArrowRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                          </div>
+                        )}
+                      </button>
+
+                      <div className="mt-3 flex items-center justify-end gap-2 border-t border-border/60 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => onEditRequest?.(request)}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                          aria-label={`Edit ${request.title}`}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onDeleteRequest?.(request)}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                          aria-label={`Delete ${request.title}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
                   );
                 })}
 

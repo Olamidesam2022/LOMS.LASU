@@ -7,9 +7,20 @@
     <meta name="description" content="Cms.lasu" />
     <meta name="author" content="CMS" />
 
-  
-<link rel="icon" type="image/x-icon" href="/favicon.jpg" />
-<link rel="apple-touch-icon" sizes="180x180" href="/favicon.jpg" />
+    <script>
+      (function () {
+        try {
+          var theme = localStorage.getItem("theme") || "system";
+          var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          var isDark = theme === "dark" || (theme === "system" && prefersDark);
+          document.documentElement.classList.toggle("dark", isDark);
+          document.documentElement.style.colorScheme = isDark ? "dark" : "light";
+        } catch (_) {}
+      })();
+    </script>
+    <link rel="icon" type="image/x-icon" href="/favicon.jpg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon.jpg" />
+  </head>
 
   <body>
     <div id="root"></div>

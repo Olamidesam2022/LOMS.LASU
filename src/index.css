@@ -147,14 +147,16 @@
     padding: 0;
   }
 
-  .theme-transitioning,
-  .theme-transitioning * {
-    transition:
-      background-color 220ms ease,
-      border-color 220ms ease,
-      color 220ms ease,
-      fill 220ms ease,
-      stroke 220ms ease !important;
+  .theme-transitioning :where(body, [class]) {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-duration: 160ms;
+    transition-timing-function: ease-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .theme-transitioning :where(body, [class]) {
+      transition: none;
+    }
   }
 
   h1,

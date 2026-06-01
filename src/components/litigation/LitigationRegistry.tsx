@@ -13,8 +13,6 @@ import {
 } from 'lucide-react';
 import { LitigationCase, ProceduralStage } from '@/types/legal';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
 interface LitigationRegistryProps {
   cases: LitigationCase[];
@@ -35,7 +33,6 @@ export function LitigationRegistry({ cases, onAddCase, onViewCase, onEditCase, o
   const [searchQuery, setSearchQuery] = useState('');
   const [stageFilter, setStageFilter] = useState<ProceduralStage | 'all'>('all');
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState<'all' | 'advisory'>('all');
 
   const filteredCases = cases.filter(caseItem => {
     const matchesSearch = 
@@ -50,58 +47,6 @@ export function LitigationRegistry({ cases, onAddCase, onViewCase, onEditCase, o
   });
 
   const stages: ProceduralStage[] = ['Mention', 'Interlocutory', 'Trial', 'Judgment'];
-
-  const advisoryStatuses = [
-    { key: 'open', label: 'Open' },
-    { key: 'in_progress', label: 'In Progress' },
-    { key: 'pending_response', label: 'Pending Response' },
-    { key: 'closed', label: 'Closed' },
-  ];
-
-  const getCaseMeta = (caseItem: LitigationCase) => {
-    try {
-      return caseItem.description ? JSON.parse(caseItem.description) : {};
-    } catch {
-      return {};
-    }
-  };
-
-  const advisoryCases = filteredCases.filter((caseItem) => {
-    const meta = getCaseMeta(caseItem) as { case_type?: string; caseType?: string };
-    return (meta.case_type || meta.caseType || '').toLowerCase() === 'advisory';
-  });
-
-  const normalizeStatus = (status: string) =>
-    status.toLowerCase().replace(/\s+/g, '_');
-
-  const handleAdvisoryDrop = async (
-    event: React.DragEvent<HTMLDivElement>,
-    newStatus: string,
-  ) => {
-    event.preventDefault();
-    const caseId = event.dataTransfer.getData('text/plain');
-    if (!caseId) return;
-
-    const caseItem = filteredCases.find((item) => item.id === caseId);
-    const meta = caseItem ? getCaseMeta(caseItem) : {};
-    const { error } = await supabase
-      .from('cases')
-      .update({
-        description: JSON.stringify({
-          ...meta,
-          status: newStatus,
-        }),
-      })
-      .eq('id', caseId);
-
-    if (error) {
-      console.error('Failed to update advisory case status:', error);
-      toast.error('Unable to update advisory request status');
-      return;
-    }
-
-    toast.success('Advisory request status updated');
-  };
 
   return (
     <div className="space-y-4 p-4 md:p-6">
@@ -118,31 +63,6 @@ export function LitigationRegistry({ cases, onAddCase, onViewCase, onEditCase, o
         >
           <Plus className="h-4 w-4" />
           <span>New Case</span>
-        </button>
-      </div>
-
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        <button
-          onClick={() => setViewMode('all')}
-          className={cn(
-            "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
-            viewMode === 'all'
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-muted-foreground hover:text-foreground",
-          )}
-        >
-          All Cases
-        </button>
-        <button
-          onClick={() => setViewMode('advisory')}
-          className={cn(
-            "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
-            viewMode === 'advisory'
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-muted-foreground hover:text-foreground",
-          )}
-        >
-          Advisory Requests
         </button>
       </div>
 
@@ -204,62 +124,6 @@ export function LitigationRegistry({ cases, onAddCase, onViewCase, onEditCase, o
           </div>
         </div>
       )}
-
-      {viewMode === 'advisory' && (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {advisoryStatuses.map((status) => {
-            const columnCases = advisoryCases.filter(
-              (caseItem) => normalizeStatus(caseItem.status) === status.key,
-            );
-
-            return (
-              <div
-                key={status.key}
-                onDragOver={(event) => event.preventDefault()}
-                onDrop={(event) => handleAdvisoryDrop(event, status.key)}
-                className="min-h-64 rounded-xl border border-border bg-card"
-              >
-                <div className="flex items-center justify-between border-b border-border p-3">
-                  <h3 className="text-sm font-semibold text-foreground">
-                    {status.label}
-                  </h3>
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                    {columnCases.length}
-                  </span>
-                </div>
-                <div className="space-y-2 p-3">
-                  {columnCases.length === 0 && (
-                    <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
-                      No advisory requests here.
-                    </p>
-                  )}
-                  {columnCases.map((caseItem) => (
-                    <button
-                      key={caseItem.id}
-                      draggable
-                      onDragStart={(event) =>
-                        event.dataTransfer.setData('text/plain', caseItem.id)
-                      }
-                      onClick={() => onViewCase?.(caseItem)}
-                      className="w-full rounded-lg border border-border bg-background p-3 text-left transition-colors hover:border-accent/60 hover:bg-accent/5"
-                    >
-                      <p className="font-mono text-xs text-muted-foreground">
-                        {caseItem.suitNumber}
-                      </p>
-                      <h4 className="mt-1 line-clamp-2 text-sm font-medium text-foreground">
-                        {caseItem.caseTitle}
-                      </h4>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {viewMode === 'all' && (
-        <>
 
       <div className="grid gap-3">
         {filteredCases.map((caseItem, index) => (
@@ -345,8 +209,6 @@ export function LitigationRegistry({ cases, onAddCase, onViewCase, onEditCase, o
             Try adjusting your search or filter criteria
           </p>
         </div>
-      )}
-        </>
       )}
     </div>
   );

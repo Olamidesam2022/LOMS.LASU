@@ -4,6 +4,17 @@ import { AdvisoryRequest, AdvisoryStatus } from "@/types/legal";
 import { useAuth } from "@/context/AuthContext";
 import { writeAuditLog } from "@/lib/audit";
 
+export interface AdvisoryInput {
+  title: string;
+  requestedBy: string;
+  department: string;
+  status?: AdvisoryStatus;
+  priority?: string;
+  dueDate?: string;
+  assignedTo?: string;
+  description?: string;
+}
+
 interface AdvisoryRow {
   id: string;
   title: string;
@@ -51,15 +62,7 @@ export function useAdvisoryRequests() {
   }, [isApproved, user]);
 
   const createAdvisoryRequest = useCallback(
-    async (input: {
-      title: string;
-      requestedBy: string;
-      department: string;
-      priority?: string;
-      dueDate?: string;
-      assignedTo?: string;
-      description?: string;
-    }) => {
+    async (input: AdvisoryInput) => {
       if (!user) throw new Error("You must be logged in.");
 
       const { data, error } = await supabase
@@ -68,6 +71,7 @@ export function useAdvisoryRequests() {
           title: input.title,
           requested_by: input.requestedBy,
           department: input.department,
+          status: input.status || "Pending",
           priority: input.priority || "Medium",
           due_date: input.dueDate || null,
           assigned_to: input.assignedTo || null,
@@ -90,9 +94,68 @@ export function useAdvisoryRequests() {
     [fetchAdvisoryRequests, user],
   );
 
+  const updateAdvisoryRequest = useCallback(
+    async (id: string, input: AdvisoryInput) => {
+      if (!user) throw new Error("You must be logged in.");
+
+      const { error } = await supabase
+        .from("advisory_requests")
+        .update({
+          title: input.title,
+          requested_by: input.requestedBy,
+          department: input.department,
+          status: input.status || "Pending",
+          priority: input.priority || "Medium",
+          due_date: input.dueDate || null,
+          assigned_to: input.assignedTo || null,
+          description: input.description || "",
+        })
+        .eq("id", id);
+
+      if (error) throw error;
+      await writeAuditLog({
+        action: "UPDATE",
+        performedBy: user.id,
+        targetId: id,
+        resource: "Advisory",
+        details: `Updated advisory request: ${input.title}`,
+      });
+      await fetchAdvisoryRequests();
+    },
+    [fetchAdvisoryRequests, user],
+  );
+
+  const deleteAdvisoryRequest = useCallback(
+    async (request: AdvisoryRequest) => {
+      if (!user) throw new Error("You must be logged in.");
+
+      const { error } = await supabase
+        .from("advisory_requests")
+        .delete()
+        .eq("id", request.id);
+
+      if (error) throw error;
+      await writeAuditLog({
+        action: "DELETE",
+        performedBy: user.id,
+        targetId: request.id,
+        resource: "Advisory",
+        details: `Deleted advisory request: ${request.title}`,
+      });
+      await fetchAdvisoryRequests();
+    },
+    [fetchAdvisoryRequests, user],
+  );
+
   useEffect(() => {
     fetchAdvisoryRequests().catch(console.error);
   }, [fetchAdvisoryRequests]);
 
-  return { advisoryRequests, fetchAdvisoryRequests, createAdvisoryRequest };
+  return {
+    advisoryRequests,
+    fetchAdvisoryRequests,
+    createAdvisoryRequest,
+    updateAdvisoryRequest,
+    deleteAdvisoryRequest,
+  };
 }

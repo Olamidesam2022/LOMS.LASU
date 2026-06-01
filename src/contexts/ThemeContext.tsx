@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 
 type Theme = "light" | "dark" | "system";
 
@@ -11,6 +11,7 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const transitionTimeoutRef = useRef<number>();
   const [theme, setThemeState] = useState<Theme>(() => {
     try {
       const saved = localStorage.getItem("theme") as Theme | null;
@@ -21,7 +22,21 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       return "system";
     }
   });
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(() => {
+    try {
+      const saved = localStorage.getItem("theme") as Theme | null;
+      const currentTheme =
+        saved === "light" || saved === "dark" || saved === "system"
+          ? saved
+          : "system";
+
+      return currentTheme === "dark"
+        || (currentTheme === "system"
+          && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
     applyTheme(theme);
@@ -44,32 +59,30 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const applyTheme = (newTheme: Theme) => {
     const html = document.documentElement;
     let isDarkMode = false;
-    html.classList.add("theme-transitioning");
 
     if (newTheme === "dark") {
-      html.classList.add("dark");
       isDarkMode = true;
     } else if (newTheme === "light") {
-      html.classList.remove("dark");
       isDarkMode = false;
     } else {
       // system
       const systemDark = window.matchMedia(
         "(prefers-color-scheme: dark)",
       ).matches;
-      if (systemDark) {
-        html.classList.add("dark");
-        isDarkMode = true;
-      } else {
-        html.classList.remove("dark");
-        isDarkMode = false;
-      }
+      isDarkMode = systemDark;
     }
 
+    window.clearTimeout(transitionTimeoutRef.current);
+    html.classList.add("theme-transitioning");
+    window.requestAnimationFrame(() => {
+      html.classList.toggle("dark", isDarkMode);
+      html.style.colorScheme = isDarkMode ? "dark" : "light";
+    });
+
     setIsDark(isDarkMode);
-    window.setTimeout(() => {
+    transitionTimeoutRef.current = window.setTimeout(() => {
       html.classList.remove("theme-transitioning");
-    }, 260);
+    }, 190);
   };
 
   const setTheme = (newTheme: Theme) => {

@@ -2,17 +2,21 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { AdvisoryRequest } from '@/types/legal';
-import { Calendar, User, Building2, Clock, AlertCircle } from 'lucide-react';
+import { Calendar, User, Building2, Clock, AlertCircle, Pencil, Trash2 } from 'lucide-react';
 
 interface ViewAdvisoryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   request: AdvisoryRequest | null;
+  onEdit?: (request: AdvisoryRequest) => void;
+  onDelete?: (request: AdvisoryRequest) => void;
 }
 
 const statusColors = {
@@ -29,7 +33,13 @@ const priorityColors = {
   Critical: 'bg-destructive/10 text-destructive',
 };
 
-export function ViewAdvisoryDialog({ open, onOpenChange, request }: ViewAdvisoryDialogProps) {
+export function ViewAdvisoryDialog({
+  open,
+  onOpenChange,
+  request,
+  onEdit,
+  onDelete,
+}: ViewAdvisoryDialogProps) {
   if (!request) return null;
 
   const daysRemaining = Math.ceil(
@@ -139,6 +149,26 @@ export function ViewAdvisoryDialog({ open, onOpenChange, request }: ViewAdvisory
             </div>
           )}
         </div>
+
+        <DialogFooter className="gap-2 sm:justify-between">
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={() => onDelete?.(request)}
+            className="gap-2"
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete
+          </Button>
+          <Button
+            type="button"
+            onClick={() => onEdit?.(request)}
+            className="gap-2"
+          >
+            <Pencil className="h-4 w-4" />
+            Edit Request
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

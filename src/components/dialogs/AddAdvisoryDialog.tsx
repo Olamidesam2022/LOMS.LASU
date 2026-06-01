@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -19,33 +19,65 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { AdvisoryInput } from '@/hooks/useAdvisoryRequests';
+import { AdvisoryRequest, AdvisoryStatus } from '@/types/legal';
 
 interface AddAdvisoryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreateRequest?: (input: {
-    title: string;
-    requestedBy: string;
-    department: string;
-    priority?: string;
-    dueDate?: string;
-    assignedTo?: string;
-    description?: string;
-  }) => Promise<void>;
+  request?: AdvisoryRequest | null;
+  onCreateRequest?: (input: AdvisoryInput) => Promise<void>;
+  onUpdateRequest?: (id: string, input: AdvisoryInput) => Promise<void>;
 }
 
-export function AddAdvisoryDialog({ open, onOpenChange, onCreateRequest }: AddAdvisoryDialogProps) {
+const formatDateInput = (date?: Date) => {
+  if (!date) return '';
+  return date.toISOString().slice(0, 10);
+};
+
+const emptyForm = {
+  title: '',
+  requestedBy: '',
+  department: '',
+  status: 'Pending' as AdvisoryStatus,
+  priority: '',
+  dueDate: '',
+  assignedTo: '',
+  description: '',
+};
+
+export function AddAdvisoryDialog({
+  open,
+  onOpenChange,
+  request,
+  onCreateRequest,
+  onUpdateRequest,
+}: AddAdvisoryDialogProps) {
   const [formData, setFormData] = useState({
-    title: '',
-    requestedBy: '',
-    department: '',
-    priority: '',
-    dueDate: '',
-    assignedTo: '',
-    description: '',
+    ...emptyForm,
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const isEditing = Boolean(request);
+
+  useEffect(() => {
+    if (!open) return;
+
+    if (request) {
+      setFormData({
+        title: request.title,
+        requestedBy: request.requestedBy,
+        department: request.department,
+        status: request.status,
+        priority: request.priority,
+        dueDate: formatDateInput(request.dueDate),
+        assignedTo: request.assignedTo === 'Unassigned' ? '' : request.assignedTo,
+        description: request.description,
+      });
+    } else {
+      setFormData({ ...emptyForm });
+    }
+  }, [open, request]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,23 +89,22 @@ export function AddAdvisoryDialog({ open, onOpenChange, onCreateRequest }: AddAd
 
     setIsLoading(true);
     try {
-      await onCreateRequest?.(formData);
-      toast.success('Advisory request created successfully', {
-        description: `Request "${formData.title}" has been added.`,
-      });
-      
-      setFormData({
-        title: '',
-        requestedBy: '',
-        department: '',
-        priority: '',
-        dueDate: '',
-        assignedTo: '',
-        description: '',
-      });
+      if (request) {
+        await onUpdateRequest?.(request.id, formData);
+        toast.success('Advisory request updated successfully', {
+          description: `Request "${formData.title}" has been updated.`,
+        });
+      } else {
+        await onCreateRequest?.(formData);
+        toast.success('Advisory request created successfully', {
+          description: `Request "${formData.title}" has been added.`,
+        });
+      }
+
+      setFormData({ ...emptyForm });
       onOpenChange(false);
     } catch (error: any) {
-      toast.error('Failed to create advisory request', {
+      toast.error(`Failed to ${isEditing ? 'update' : 'create'} advisory request`, {
         description: error.message || 'Please try again.',
       });
     } finally {
@@ -85,9 +116,9 @@ export function AddAdvisoryDialog({ open, onOpenChange, onCreateRequest }: AddAd
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>New Advisory Request</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edit Advisory Request' : 'New Advisory Request'}</DialogTitle>
           <DialogDescription>
-            Create a new legal advisory request.
+            {isEditing ? 'Update the advisory workflow details.' : 'Create a new legal advisory request.'}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -133,6 +164,23 @@ export function AddAdvisoryDialog({ open, onOpenChange, onCreateRequest }: AddAd
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as AdvisoryStatus }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="In Progress">In Progress</SelectItem>
+                  <SelectItem value="Completed">Completed</SelectItem>
+                  <SelectItem value="Urgent">Urgent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="priority">Priority</Label>
               <Select
@@ -187,7 +235,7 @@ export function AddAdvisoryDialog({ open, onOpenChange, onCreateRequest }: AddAd
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Creating...' : 'Create Request'}
+              {isLoading ? (isEditing ? 'Saving...' : 'Creating...') : (isEditing ? 'Save Changes' : 'Create Request')}
             </Button>
           </DialogFooter>
         </form>

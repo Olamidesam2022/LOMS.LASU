@@ -58,6 +58,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { openModal } = useCaseProgressModal();
   const getViewFromPath = (pathname: string) => {
+    if (pathname.startsWith("/app/advisory")) return "advisory";
     if (pathname.startsWith("/app/documents")) return "documents";
     if (pathname.startsWith("/app/calendar")) return "calendar";
     if (pathname.startsWith("/app/progress")) return "progress";
@@ -75,7 +76,12 @@ const Index = () => {
   const [isPageLoading, setIsPageLoading] = useState(false);
   const mainContentRef = useRef<HTMLDivElement>(null);
   const { cases, metrics, createCase, updateCase, deleteCase } = useCases();
-  const { advisoryRequests, createAdvisoryRequest } = useAdvisoryRequests();
+  const {
+    advisoryRequests,
+    createAdvisoryRequest,
+    updateAdvisoryRequest,
+    deleteAdvisoryRequest,
+  } = useAdvisoryRequests();
   const { documents, createDocument, downloadDocument, deleteDocument } = useDocuments();
   const { auditLogs } = useAuditLogs();
   const { users: dbUsers, fetchUsers, updateUser } = useProfiles();
@@ -160,7 +166,7 @@ const Index = () => {
     const routeByView: Record<string, string> = {
       dashboard: "/app",
       litigation: "/app/cases",
-      advisory: "/app/cases?type=advisory",
+      advisory: "/app/advisory",
       documents: "/app/documents",
       calendar: "/app/calendar",
       progress: "/app/progress",
@@ -193,6 +199,32 @@ const Index = () => {
   const handleViewAdvisory = (request: AdvisoryRequest) => {
     setSelectedAdvisory(request);
     setViewAdvisoryOpen(true);
+  };
+
+  const handleAddAdvisory = () => {
+    setSelectedAdvisory(null);
+    setAddAdvisoryOpen(true);
+  };
+
+  const handleEditAdvisory = (request: AdvisoryRequest) => {
+    setSelectedAdvisory(request);
+    setViewAdvisoryOpen(false);
+    setAddAdvisoryOpen(true);
+  };
+
+  const handleDeleteAdvisory = async (request: AdvisoryRequest) => {
+    if (!window.confirm(`Delete advisory request "${request.title}"?`)) return;
+
+    try {
+      await deleteAdvisoryRequest(request);
+      setViewAdvisoryOpen(false);
+      setSelectedAdvisory(null);
+      toast.success("Advisory request deleted");
+    } catch (error: any) {
+      toast.error("Failed to delete advisory request", {
+        description: error.message || "Please try again.",
+      });
+    }
   };
 
   const handleViewDocument = (doc: LegalDocument) => {
@@ -425,8 +457,10 @@ const Index = () => {
         return (
           <AdvisoryWorkflow
             requests={advisoryRequests}
-            onAddRequest={() => setAddAdvisoryOpen(true)}
+            onAddRequest={handleAddAdvisory}
             onViewRequest={handleViewAdvisory}
+            onEditRequest={handleEditAdvisory}
+            onDeleteRequest={handleDeleteAdvisory}
           />
         );
       case "documents":
@@ -556,8 +590,13 @@ const Index = () => {
       />
       <AddAdvisoryDialog
         open={addAdvisoryOpen}
-        onOpenChange={setAddAdvisoryOpen}
+        onOpenChange={(open) => {
+          setAddAdvisoryOpen(open);
+          if (!open) setSelectedAdvisory(null);
+        }}
+        request={selectedAdvisory}
         onCreateRequest={createAdvisoryRequest}
+        onUpdateRequest={updateAdvisoryRequest}
       />
       <UploadDocumentDialog
         open={uploadDocumentOpen}
@@ -579,6 +618,8 @@ const Index = () => {
         open={viewAdvisoryOpen}
         onOpenChange={setViewAdvisoryOpen}
         request={selectedAdvisory}
+        onEdit={handleEditAdvisory}
+        onDelete={handleDeleteAdvisory}
       />
       <ViewDocumentDialog
         open={viewDocumentOpen}
