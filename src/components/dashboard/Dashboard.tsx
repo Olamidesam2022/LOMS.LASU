@@ -1,10 +1,6 @@
 import { CalendarDays, FileText, Scale, Users } from "lucide-react";
 import { RecentActivity } from "./RecentActivity";
-import {
-  LitigationCase,
-  AuditLog,
-  DashboardMetrics,
-} from "@/types/legal";
+import { LitigationCase, AuditLog, DashboardMetrics } from "@/types/legal";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePendingApprovals } from "@/hooks/usePendingApprovals";
 import { cn } from "@/lib/utils";
@@ -21,7 +17,13 @@ const quickLinks = [
   { label: "Cases", view: "litigation", icon: Scale, tone: "blue" },
   { label: "Documents", view: "documents", icon: FileText, tone: "pink" },
   { label: "Calendar", view: "calendar", icon: CalendarDays, tone: "mint" },
-  { label: "Users", view: "users", icon: Users, tone: "sand", superadminOnly: true },
+  {
+    label: "Users",
+    view: "users",
+    icon: Users,
+    tone: "sand",
+    superadminOnly: true,
+  },
 ];
 
 export function Dashboard({
@@ -49,13 +51,19 @@ export function Dashboard({
       <section className="dashboard-hero">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <p className="text-sm font-semibold text-muted-foreground">My Organization</p>
+            <p className="text-sm font-semibold text-muted-foreground"></p>
             <h1 className="mt-1 text-3xl font-black tracking-tight text-foreground sm:text-4xl">
               LASU Legal Unit
             </h1>
           </div>
           <div className="flex flex-wrap gap-2">
-            {["Organization", "Cases", "Documents", "Calendar", ...(role === "superadmin" ? ["Users"] : [])].map((item) => (
+            {[
+              "Organization",
+              "Cases",
+              "Documents",
+              "Calendar",
+              ...(role === "superadmin" ? ["Users"] : []),
+            ].map((item) => (
               <button
                 key={item}
                 onClick={() =>
@@ -86,9 +94,13 @@ export function Dashboard({
               <span className="dashboard-stat-icon">
                 <Scale className="h-4 w-4" />
               </span>
-              <span className="dashboard-mini-pill">{metrics.totalCases} total</span>
+              <span className="dashboard-mini-pill">
+                {metrics.totalCases} total
+              </span>
             </div>
-            <p className="mt-4 text-sm font-extrabold text-foreground">Operations</p>
+            <p className="mt-4 text-sm font-extrabold text-foreground">
+              Operations
+            </p>
             <div className="mt-2 flex items-end gap-2">
               <span className="text-4xl font-black tracking-tight text-foreground">
                 {metrics.activeLitigation}
@@ -103,7 +115,9 @@ export function Dashboard({
                   key={index}
                   className={cn(
                     "h-7 flex-1 rounded-md",
-                    index < 5 ? "bg-blue-400/55" : "border border-dashed border-slate-300/80",
+                    index < 5
+                      ? "bg-blue-400/55"
+                      : "border border-dashed border-slate-300/80",
                   )}
                 />
               ))}
@@ -115,9 +129,13 @@ export function Dashboard({
               <span className="dashboard-stat-icon">
                 <CalendarDays className="h-4 w-4" />
               </span>
-              <span className="dashboard-mini-pill">{upcomingCases.length} scheduled</span>
+              <span className="dashboard-mini-pill">
+                {upcomingCases.length} scheduled
+              </span>
             </div>
-            <p className="mt-4 text-sm font-extrabold text-foreground">Hearing watch</p>
+            <p className="mt-4 text-sm font-extrabold text-foreground">
+              Hearing watch
+            </p>
             <div className="mt-2 flex items-end gap-2">
               <span className="text-4xl font-black tracking-tight text-foreground">
                 {metrics.urgentHearings}
@@ -147,36 +165,46 @@ export function Dashboard({
         <div className="dashboard-panel">
           <div className="flex items-center justify-between border-b border-border/70 p-4">
             <div>
-              <h2 className="text-lg font-black text-foreground">Recommended for you</h2>
-              <p className="text-sm text-muted-foreground">Quick access to core workspaces</p>
+              <h2 className="text-lg font-black text-foreground">
+                Recommended for you
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Quick access to core workspaces
+              </p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3 p-4">
             {quickLinks
               .filter((item) => !item.superadminOnly || role === "superadmin")
               .map((item) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.label}
-                  onClick={() => onNavigate?.(item.view)}
-                  className={cn("dashboard-quick-tile", `tile-${item.tone}`)}
-                >
-                  <span className="dashboard-quick-icon">
-                    <Icon className="h-4 w-4" />
-                  </span>
-                  <span className="text-sm font-black text-foreground">{item.label}</span>
-                </button>
-              );
-            })}
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.label}
+                    onClick={() => onNavigate?.(item.view)}
+                    className={cn("dashboard-quick-tile", `tile-${item.tone}`)}
+                  >
+                    <span className="dashboard-quick-icon">
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="text-sm font-black text-foreground">
+                      {item.label}
+                    </span>
+                  </button>
+                );
+              })}
           </div>
         </div>
 
         <div className="dashboard-panel overflow-hidden">
           <div className="flex items-center justify-between gap-3 border-b border-border/70 p-4">
             <div>
-              <h2 className="text-lg font-black text-foreground">Upcoming Hearings</h2>
-              <p className="text-sm text-muted-foreground">Next scheduled matters</p>
+              <h2 className="text-lg font-black text-foreground">
+                Upcoming Hearings
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Next scheduled matters
+              </p>
             </div>
             <button
               onClick={() => onNavigate?.("calendar")}
@@ -189,8 +217,12 @@ export function Dashboard({
             {upcomingCases.length === 0 && (
               <div className="p-8 text-center">
                 <CalendarDays className="mx-auto h-8 w-8 text-muted-foreground" />
-                <p className="mt-2 text-sm font-bold text-foreground">No upcoming hearings</p>
-                <p className="text-xs text-muted-foreground">Scheduled hearings will appear here.</p>
+                <p className="mt-2 text-sm font-bold text-foreground">
+                  No upcoming hearings
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Scheduled hearings will appear here.
+                </p>
               </div>
             )}
             {upcomingCases.map((caseItem) => (
@@ -201,7 +233,9 @@ export function Dashboard({
               >
                 <span className="flex h-12 w-12 flex-col items-center justify-center rounded-xl bg-muted">
                   <span className="text-[10px] font-black uppercase text-muted-foreground">
-                    {caseItem.nextHearing.toLocaleDateString("en-NG", { month: "short" })}
+                    {caseItem.nextHearing.toLocaleDateString("en-NG", {
+                      month: "short",
+                    })}
                   </span>
                   <span className="text-lg font-black text-foreground">
                     {caseItem.nextHearing.getDate()}
@@ -215,7 +249,9 @@ export function Dashboard({
                     {caseItem.caseTitle}
                   </span>
                 </span>
-                <span className="status-pill status-active w-fit">{caseItem.status}</span>
+                <span className="status-pill status-active w-fit">
+                  {caseItem.status}
+                </span>
               </button>
             ))}
           </div>
@@ -230,7 +266,9 @@ export function Dashboard({
       {role === "superadmin" && (
         <div className="dashboard-panel p-4 sm:p-5">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <h3 className="font-black text-foreground">Pending User Approvals</h3>
+            <h3 className="font-black text-foreground">
+              Pending User Approvals
+            </h3>
             <button
               onClick={() => fetchPendingUsers()}
               className="toolbar-button px-3 py-1"
