@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Bell,
+  CircleHelp,
   Search,
   Menu,
   UserCircle2,
@@ -24,6 +25,8 @@ interface HeaderProps {
   currentUser: User;
   title: string;
   onMenuToggle?: () => void;
+  onAccountClick?: () => void;
+  onHelpClick?: () => void;
   onSearch?: (query: string) => void;
   searchResults?: HeaderSearchResult[];
   onSearchResultSelect?: (result: HeaderSearchResult) => void;
@@ -33,6 +36,8 @@ export function Header({
   currentUser,
   title,
   onMenuToggle,
+  onAccountClick,
+  onHelpClick,
   onSearch,
   searchResults = [],
   onSearchResultSelect,
@@ -285,13 +290,25 @@ export function Header({
 
           <ThemeToggle />
 
-          <div
-            className="hidden h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground sm:flex"
+          <button
+            type="button"
+            onClick={onHelpClick}
+            className="hidden h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:flex"
+            title="How to use LOMS"
+            aria-label="Open how to use guide"
+          >
+            <CircleHelp className="h-5 w-5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={onAccountClick}
+            className="hidden h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:flex"
             title={`${currentUser.name} - ${currentUser.role}`}
-            aria-label={`${currentUser.name} account`}
+            aria-label={`View ${currentUser.name} account settings`}
           >
             <UserCircle2 className="h-9 w-9" />
-          </div>
+          </button>
         </div>
       </div>
       <div className="px-3 pb-3 md:hidden">

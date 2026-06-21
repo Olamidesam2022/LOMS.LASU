@@ -255,7 +255,7 @@
   }
 
   .nav-item {
-    @apply flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-sidebar-foreground/70 transition-colors duration-200 hover:bg-sidebar-accent hover:text-sidebar-foreground;
+    @apply flex min-h-9 items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-sidebar-foreground/70 transition-colors duration-200 hover:bg-sidebar-accent hover:text-sidebar-foreground;
   }
 
   .nav-item.active {
@@ -481,80 +481,20 @@
     @apply border border-border bg-background text-foreground;
   }
 
-  .landing-card {
-    animation: landing-rise 700ms ease-out both;
+  .landing-shell {
+    background:
+      linear-gradient(90deg, hsl(var(--foreground) / 0.14) 2px, transparent 2px),
+      linear-gradient(0deg, hsl(var(--foreground) / 0.1) 2px, transparent 2px),
+      hsl(var(--background));
+    background-size: 4.5rem 4.5rem;
   }
 
-  .landing-fade {
-    animation: landing-fade 520ms ease-out both;
-  }
-
-  .landing-hero-copy {
-    animation: landing-slide-left 650ms ease-out both;
-  }
-
-  .landing-section-title {
-    animation: landing-rise 600ms ease-out both;
-    animation-timeline: view();
-    animation-range: entry 0% cover 28%;
-  }
-
-  .landing-feature-card,
-  .landing-step-card {
-    animation: landing-rise 560ms ease-out both;
-    animation-timeline: view();
-    animation-range: entry 0% cover 30%;
-  }
-
-  .landing-row {
-    animation: landing-rise 520ms ease-out both;
-  }
-
-  .landing-float {
-    animation: landing-float 7s ease-in-out infinite;
-  }
-
-  .landing-float-delayed {
-    animation: landing-float 8s ease-in-out infinite 1s;
-  }
-
-  .landing-cosmos {
-    position: relative;
-    background: hsl(var(--background));
-    color: hsl(var(--foreground));
-  }
-
-  .landing-cosmos .text-white {
-    color: hsl(220 28% 10%);
-  }
-
-  .landing-cosmos .text-slate-300,
-  .landing-cosmos .text-slate-200,
-  .landing-cosmos .text-blue-200,
-  .landing-cosmos .text-blue-300 {
-    color: hsl(221 25% 34%);
-  }
-
-  .dark .landing-cosmos {
-    background: hsl(var(--background));
-  }
-
-  .dark .landing-cosmos .text-white {
-    color: white;
-  }
-
-  .dark .landing-cosmos .text-slate-300 {
-    color: hsl(215 20% 78%);
-  }
-
-  .dark .landing-cosmos .text-slate-200,
-  .dark .landing-cosmos .text-blue-200,
-  .dark .landing-cosmos .text-blue-300 {
-    color: hsl(218 100% 86%);
-  }
-
-  .landing-cosmos::before {
-    content: none;
+  .dark .landing-shell {
+    background:
+      linear-gradient(90deg, hsl(var(--border) / 0.34) 1px, transparent 1px),
+      linear-gradient(0deg, hsl(var(--border) / 0.26) 1px, transparent 1px),
+      hsl(var(--background));
+    background-size: 4.5rem 4.5rem;
   }
 
   .landing-nav-wrap {
@@ -562,186 +502,102 @@
   }
 
   .landing-nav {
-    min-height: 5.25rem;
-    border-radius: 1rem;
-    border: 1px solid hsl(var(--border));
-    background: hsl(var(--background));
-    box-shadow: none;
-    backdrop-filter: none;
-  }
-
-  .dark .landing-nav {
-    background: hsl(var(--background));
-  }
-
-  .landing-logo-mark {
-    @apply inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-foreground text-background;
-    box-shadow: none;
-  }
-
-  .landing-logo-mark span {
-    font-size: 0.78rem;
-    font-weight: 950;
-    letter-spacing: -0.03em;
+    @apply min-h-16 rounded-xl border border-border bg-background/95 px-3 py-2 shadow-sm backdrop-blur-xl;
   }
 
   .landing-nav-pill {
-    @apply rounded-full px-5 py-3 transition-colors hover:text-white;
+    @apply rounded-md px-4 py-2 transition-colors hover:bg-background hover:text-foreground;
   }
 
-  .landing-nav-pill.active {
-    @apply bg-foreground text-background shadow-none;
-  }
-
-  .landing-launch-button,
+  .landing-login-button,
   .landing-primary-cta,
   .landing-secondary-cta {
-    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-extrabold transition-all;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-extrabold transition-colors;
   }
 
-  .landing-launch-button,
+  .landing-login-button,
   .landing-primary-cta {
-    background: hsl(var(--foreground));
-    color: hsl(var(--background));
-    box-shadow: none;
-  }
-
-  .landing-launch-button:hover,
-  .landing-primary-cta:hover {
-    transform: translateY(-1px);
-    box-shadow: none;
+    @apply bg-foreground text-background hover:bg-foreground/90;
   }
 
   .landing-secondary-cta {
-    color: hsl(var(--foreground));
-    border: 1px solid hsl(var(--border));
-    background: hsl(var(--background));
+    @apply border border-border bg-background text-foreground hover:bg-muted;
   }
 
-  .landing-secondary-cta:hover {
-    background: hsl(0 0% 100% / 0.12);
-  }
-
-  .landing-hero {
-    perspective: 80rem;
-  }
-
-  .landing-grid {
-    display: none;
-  }
-
-  .landing-glow-top {
-    display: none;
-  }
-
-  .landing-planet {
-    display: none;
-  }
-
-  .dark .landing-planet {
-    background:
-      radial-gradient(circle at 50% 1%, hsl(188 100% 78% / 0.52), transparent 4.5rem),
-      radial-gradient(circle at 50% 35%, hsl(210 46% 24% / 0.82), hsl(219 45% 6%) 60%, hsl(220 48% 3%) 100%);
-  }
-
-  .landing-planet::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background-image: radial-gradient(hsl(205 100% 88% / 0.16) 1px, transparent 1px);
-    background-size: 1rem 1rem;
-    mask-image: radial-gradient(circle at 50% 30%, black, transparent 70%);
-    animation: landing-drift 18s linear infinite;
-  }
-
-  .landing-orbit {
-    display: none;
-  }
-
-  .orbit-one {
-    height: 38rem;
-    width: 78rem;
-    animation: landing-orbit 24s linear infinite;
-  }
-
-  .orbit-two {
-    height: 46rem;
-    width: 94rem;
-    animation: landing-orbit 34s linear infinite reverse;
-  }
-
-  .landing-hero-content {
-    animation: landing-hero-enter 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  .landing-hero-copy {
+    animation: landing-rise 620ms ease-out both;
   }
 
   .landing-kicker {
-    @apply inline-flex items-center gap-2 rounded-full border border-border bg-background px-5 py-3 text-sm font-extrabold text-foreground;
-    box-shadow: none;
-    backdrop-filter: none;
+    @apply inline-flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-2 text-sm font-extrabold text-foreground shadow-sm;
   }
 
-  .landing-orbit-panel {
-    position: absolute;
-    bottom: 9rem;
-    right: max(4rem, calc((100vw - 82rem) / 2));
-    z-index: 12;
-    width: 14rem;
+  .landing-brief-card,
+  .landing-module-card,
+  .landing-preview,
+  .landing-timeline {
+    @apply border border-border bg-card shadow-sm;
   }
 
-  .landing-orbit-chip {
-    @apply mb-3 block rounded-full border border-border bg-background px-4 py-2 text-center text-xs font-extrabold text-foreground;
-    backdrop-filter: none;
-    animation: none;
+  .landing-brief-card {
+    @apply rounded-lg p-4;
   }
 
-  .landing-section {
-    position: relative;
-    z-index: 5;
+  .landing-preview {
+    @apply rounded-xl p-4 sm:p-6;
+    animation: landing-rise 720ms ease-out 120ms both;
   }
 
-  .landing-feature-card,
-  .landing-timeline,
-  .landing-final-cta {
-    border: 1px solid hsl(var(--border));
-    background: hsl(var(--card));
-    box-shadow: none;
-    backdrop-filter: none;
+  .landing-preview-top {
+    @apply flex items-start justify-between gap-4 border-b border-border pb-5;
   }
 
-  .landing-feature-card {
-    @apply rounded-2xl p-6;
-    min-height: 16rem;
+  .landing-stat-tile {
+    @apply rounded-lg border border-border bg-background p-4;
   }
 
-  .landing-feature-icon {
-    @apply flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-background text-foreground;
-    box-shadow: none;
+  .landing-stat-tile strong {
+    @apply block text-3xl font-black leading-none text-foreground;
+  }
+
+  .landing-stat-tile span {
+    @apply mt-2 block text-xs font-bold text-muted-foreground;
+  }
+
+  .landing-preview-row {
+    @apply flex items-center justify-between gap-4 rounded-lg border border-border bg-background p-4;
+  }
+
+  .landing-preview-row span {
+    @apply shrink-0 rounded-md border border-border bg-muted px-2.5 py-1 text-xs font-black text-foreground;
+  }
+
+  .landing-module-card {
+    @apply flex min-h-28 flex-col justify-between rounded-lg p-4 transition-colors hover:bg-background;
+  }
+
+  .landing-module-card h3 {
+    @apply mt-5 text-sm font-extrabold leading-5 text-foreground;
   }
 
   .landing-timeline {
-    @apply rounded-3xl p-3;
+    @apply rounded-xl p-3;
   }
 
   .landing-timeline-row {
-    @apply grid grid-cols-[3.5rem_1fr_auto] items-start gap-4 rounded-2xl border border-border bg-background p-4;
+    @apply grid grid-cols-[3.5rem_1fr_auto] items-center gap-4 rounded-lg border border-border bg-background p-4;
   }
 
   .landing-timeline-row + .landing-timeline-row {
     margin-top: 0.75rem;
   }
 
+  .landing-timeline-row p {
+    @apply text-sm font-bold leading-6 text-foreground;
+  }
+
   .landing-timeline-number {
-    @apply flex h-11 w-11 items-center justify-center rounded-full border border-border bg-foreground text-sm font-black text-background;
-  }
-
-  .landing-final-cta {
-    @apply rounded-[2rem] p-8 sm:p-12;
-  }
-
-  .landing-reveal {
-    animation: landing-rise 800ms ease both;
-    animation-timeline: view();
-    animation-range: entry 0% cover 34%;
+    @apply flex h-11 w-11 items-center justify-center rounded-lg bg-foreground text-sm font-black text-background;
   }
 }
 

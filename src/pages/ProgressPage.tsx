@@ -20,7 +20,7 @@ function getProgressPercent(status?: string | null) {
     pending_response: 60,
     closed: 80,
     completed: 80,
-    archived: 100,
+    archived: 80,
   };
 
   return percentByStatus[normalized] ?? 20;
@@ -29,7 +29,9 @@ function getProgressPercent(status?: string | null) {
 export default function ProgressPage() {
   const { openModal } = useCaseProgressModal();
   const { cases, isLoading } = useCases();
-  const activeCases = cases.filter((caseItem) => caseItem.status !== "Archived");
+  const activeCases = cases.filter(
+    (caseItem) => !["Closed", "Archived"].includes(caseItem.status),
+  );
 
   return (
     <div className="space-y-5 p-4 md:p-6">

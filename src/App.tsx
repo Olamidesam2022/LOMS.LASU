@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -15,7 +16,13 @@ const queryClient = new QueryClient();
 
 // Protected route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isApproved, status, signOut } = useAuth();
+
+  useEffect(() => {
+    if (user && !isLoading && status && status !== "approved") {
+      signOut();
+    }
+  }, [isLoading, signOut, status, user]);
 
   if (isLoading) {
     return null; // Index handles its own loading state
@@ -25,18 +32,22 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
+  if (!isApproved) {
+    return <Navigate to="/login" replace />;
+  }
+
   return <>{children}</>;
 }
 
 // Public route wrapper (redirects to home if already logged in)
 function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isApproved } = useAuth();
 
   if (isLoading) {
     return null;
   }
 
-  if (user) {
+  if (user && isApproved) {
     return <Navigate to="/app" replace />;
   }
 

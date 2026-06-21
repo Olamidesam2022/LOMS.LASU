@@ -11,6 +11,7 @@ import {
   CalendarDays,
   Activity,
   Archive,
+  FolderSearch,
   UserCircle2,
   X,
 } from "lucide-react";
@@ -72,6 +73,12 @@ const navItems: NavItem[] = [
     id: "progress",
     label: "Progress Bar",
     icon: Activity,
+    roles: ["superadmin", "admin", "staff"],
+  },
+  {
+    id: "records",
+    label: "Records",
+    icon: FolderSearch,
     roles: ["superadmin", "admin", "staff"],
   },
   {

@@ -24,6 +24,8 @@ import { UserManagement } from "@/components/users/UserManagement";
 import { Settings } from "@/components/settings/Settings";
 import { CalendarView } from "@/components/calendar/CalendarView";
 import { ArchiveView } from "@/components/archive/ArchiveView";
+import { RecordsView } from "@/components/records/RecordsView";
+import { OnboardingGuide } from "@/components/onboarding/OnboardingGuide";
 import ProgressPage from "@/pages/ProgressPage";
 import { AddCaseDialog } from "@/components/dialogs/AddCaseDialog";
 import { AddAdvisoryDialog } from "@/components/dialogs/AddAdvisoryDialog";
@@ -32,6 +34,17 @@ import { AddUserDialog } from "@/components/dialogs/AddUserDialog";
 import { ViewCaseDialog } from "@/components/dialogs/ViewCaseDialog";
 import { ViewAdvisoryDialog } from "@/components/dialogs/ViewAdvisoryDialog";
 import { ViewDocumentDialog } from "@/components/dialogs/ViewDocumentDialog";
+import { EditUserDialog } from "@/components/dialogs/EditUserDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useSwipeGesture } from "@/hooks/use-swipe-gesture";
@@ -45,11 +58,19 @@ const viewTitles: Record<string, string> = {
   documents: "Document Vault",
   calendar: "Court Calendar",
   progress: "Progress",
+  records: "Records",
   archive: "Archive",
   audit: "Audit Trail",
   users: "User Management",
   unauthorized: "Unauthorized",
   settings: "Settings",
+};
+
+type ConfirmDialogState = {
+  title: string;
+  description: string;
+  actionLabel: string;
+  onConfirm: () => Promise<void> | void;
 };
 
 const Index = () => {
@@ -62,6 +83,7 @@ const Index = () => {
     if (pathname.startsWith("/app/documents")) return "documents";
     if (pathname.startsWith("/app/calendar")) return "calendar";
     if (pathname.startsWith("/app/progress")) return "progress";
+    if (pathname.startsWith("/app/records")) return "records";
     if (pathname.startsWith("/app/archive")) return "archive";
     if (pathname.startsWith("/app/cases")) return "litigation";
     if (pathname.startsWith("/app/audit")) return "audit";
@@ -91,9 +113,13 @@ const Index = () => {
   const [addAdvisoryOpen, setAddAdvisoryOpen] = useState(false);
   const [uploadDocumentOpen, setUploadDocumentOpen] = useState(false);
   const [addUserOpen, setAddUserOpen] = useState(false);
+  const [editUserOpen, setEditUserOpen] = useState(false);
   const [viewCaseOpen, setViewCaseOpen] = useState(false);
   const [viewAdvisoryOpen, setViewAdvisoryOpen] = useState(false);
   const [viewDocumentOpen, setViewDocumentOpen] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   // Selected items for view dialogs
   const [selectedCase, setSelectedCase] = useState<LitigationCase | null>(null);
@@ -101,6 +127,8 @@ const Index = () => {
     useState<AdvisoryRequest | null>(null);
   const [selectedDocument, setSelectedDocument] =
     useState<LegalDocument | null>(null);
+  const [selectedUserForEdit, setSelectedUserForEdit] =
+    useState<LegacyUser | null>(null);
 
   useEffect(() => {
     if (user && role === "superadmin") {
@@ -170,6 +198,7 @@ const Index = () => {
       documents: "/app/documents",
       calendar: "/app/calendar",
       progress: "/app/progress",
+      records: "/app/records",
       archive: "/app/archive",
       audit: "/app/audit",
       users: "/app/users",
@@ -184,16 +213,21 @@ const Index = () => {
   };
 
   const handleDeleteCase = async (caseItem: LitigationCase) => {
-    if (!window.confirm(`Delete case "${caseItem.caseTitle}"?`)) return;
-
-    try {
-      await deleteCase(caseItem);
-      toast.success("Case deleted");
-    } catch (error: any) {
-      toast.error("Failed to delete case", {
-        description: error.message || "Please try again.",
-      });
-    }
+    setConfirmDialog({
+      title: "Delete case?",
+      description: `This will permanently delete "${caseItem.caseTitle}". This action cannot be undone.`,
+      actionLabel: "Delete case",
+      onConfirm: async () => {
+        try {
+          await deleteCase(caseItem);
+          toast.success("Case deleted");
+        } catch (error: any) {
+          toast.error("Failed to delete case", {
+            description: error.message || "Please try again.",
+          });
+        }
+      },
+    });
   };
 
   const handleViewAdvisory = (request: AdvisoryRequest) => {
@@ -213,18 +247,23 @@ const Index = () => {
   };
 
   const handleDeleteAdvisory = async (request: AdvisoryRequest) => {
-    if (!window.confirm(`Delete advisory request "${request.title}"?`)) return;
-
-    try {
-      await deleteAdvisoryRequest(request);
-      setViewAdvisoryOpen(false);
-      setSelectedAdvisory(null);
-      toast.success("Advisory request deleted");
-    } catch (error: any) {
-      toast.error("Failed to delete advisory request", {
-        description: error.message || "Please try again.",
-      });
-    }
+    setConfirmDialog({
+      title: "Delete advisory request?",
+      description: `This will permanently delete "${request.title}". This action cannot be undone.`,
+      actionLabel: "Delete request",
+      onConfirm: async () => {
+        try {
+          await deleteAdvisoryRequest(request);
+          setViewAdvisoryOpen(false);
+          setSelectedAdvisory(null);
+          toast.success("Advisory request deleted");
+        } catch (error: any) {
+          toast.error("Failed to delete advisory request", {
+            description: error.message || "Please try again.",
+          });
+        }
+      },
+    });
   };
 
   const handleViewDocument = (doc: LegalDocument) => {
@@ -244,34 +283,39 @@ const Index = () => {
   };
 
   const handleDeleteDocument = async (doc: LegalDocument) => {
-    if (!window.confirm(`Delete document "${doc.name}"?`)) return;
+    setConfirmDialog({
+      title: "Delete document?",
+      description: `This will delete "${doc.name}" from the document vault and record a system note if it is linked to a case.`,
+      actionLabel: "Delete document",
+      onConfirm: async () => {
+        try {
+          if (doc.caseId && user) {
+            const removedAt = new Date();
+            const userName = profile?.full_name || user.email || "Unknown user";
+            const noteContent = `Document '${doc.name}' was removed by ${userName} on ${removedAt.toLocaleString("en-NG")}.`;
+            const { error: noteError } = await supabase.from("case_notes").insert({
+              case_id: doc.caseId,
+              content: noteContent,
+              created_by: user.id,
+              user_id: user.id,
+              is_private: false,
+              note_type: "system",
+            });
 
-    try {
-      if (doc.caseId && user) {
-        const removedAt = new Date();
-        const userName = profile?.full_name || user.email || "Unknown user";
-        const noteContent = `Document '${doc.name}' was removed by ${userName} on ${removedAt.toLocaleString("en-NG")}.`;
-        const { error: noteError } = await supabase.from("case_notes").insert({
-          case_id: doc.caseId,
-          content: noteContent,
-          created_by: user.id,
-          user_id: user.id,
-          is_private: false,
-          note_type: "system",
-        });
+            if (noteError) {
+              console.error("Failed to insert document removal system note:", noteError);
+            }
+          }
 
-        if (noteError) {
-          console.error("Failed to insert document removal system note:", noteError);
+          await deleteDocument(doc);
+          toast.success("Document deleted");
+        } catch (error: any) {
+          toast.error("Failed to delete document", {
+            description: error.message || "Please try again.",
+          });
         }
-      }
-
-      await deleteDocument(doc);
-      toast.success("Document deleted");
-    } catch (error: any) {
-      toast.error("Failed to delete document", {
-        description: error.message || "Please try again.",
-      });
-    }
+      },
+    });
   };
 
   const handleEditUser = async (legacyUser: LegacyUser) => {
@@ -280,28 +324,15 @@ const Index = () => {
       return;
     }
 
-    const nextRole = window.prompt(
-      "Enter role: superadmin, admin, or staff",
-      legacyUser.role,
-    ) as "superadmin" | "admin" | "staff" | null;
+    setSelectedUserForEdit(legacyUser);
+    setEditUserOpen(true);
+  };
 
-    if (!nextRole) return;
-    if (!["superadmin", "admin", "staff"].includes(nextRole)) {
-      toast.error("Invalid role selected.");
-      return;
-    }
-
-    const nextStatus = window.prompt(
-      "Enter status: pending, approved, or rejected",
-      legacyUser.status || "approved",
-    ) as "pending" | "approved" | "rejected" | null;
-
-    if (!nextStatus) return;
-    if (!["pending", "approved", "rejected"].includes(nextStatus)) {
-      toast.error("Invalid status selected.");
-      return;
-    }
-
+  const handleSaveUserAccess = async (
+    legacyUser: LegacyUser,
+    nextRole: "superadmin" | "admin" | "staff",
+    nextStatus: "pending" | "approved" | "rejected",
+  ) => {
     try {
       await updateUser(legacyUser.id, { role: nextRole, status: nextStatus });
       toast.success("User updated.");
@@ -318,15 +349,32 @@ const Index = () => {
       return;
     }
 
-    if (!window.confirm(`Deactivate ${legacyUser.name}?`)) return;
+    setConfirmDialog({
+      title: "Deactivate user?",
+      description: `${legacyUser.name} will lose approved access until a superadmin restores the account status.`,
+      actionLabel: "Deactivate user",
+      onConfirm: async () => {
+        try {
+          await updateUser(legacyUser.id, { status: "rejected" });
+          toast.success("User deactivated.");
+        } catch (error: any) {
+          toast.error("Failed to deactivate user", {
+            description: error.message || "Please try again.",
+          });
+        }
+      },
+    });
+  };
 
+  const handleConfirmAction = async () => {
+    if (!confirmDialog) return;
+
+    setIsConfirming(true);
     try {
-      await updateUser(legacyUser.id, { status: "rejected" });
-      toast.success("User deactivated.");
-    } catch (error: any) {
-      toast.error("Failed to deactivate user", {
-        description: error.message || "Please try again.",
-      });
+      await confirmDialog.onConfirm();
+      setConfirmDialog(null);
+    } finally {
+      setIsConfirming(false);
     }
   };
 
@@ -360,11 +408,14 @@ const Index = () => {
 
   const displayCases = cases;
   const activeCases = useMemo(
-    () => displayCases.filter((caseItem) => caseItem.status !== "Archived"),
+    () =>
+      displayCases.filter(
+        (caseItem) => !["Closed", "Archived"].includes(caseItem.status),
+      ),
     [displayCases],
   );
-  const archivedCases = useMemo(
-    () => displayCases.filter((caseItem) => caseItem.status === "Archived"),
+  const closedCases = useMemo(
+    () => displayCases.filter((caseItem) => caseItem.status === "Closed"),
     [displayCases],
   );
   const globalSearchResults = useMemo<HeaderSearchResult[]>(() => {
@@ -476,12 +527,22 @@ const Index = () => {
         );
       case "progress":
         return <ProgressPage />;
+      case "records":
+        return (
+          <RecordsView
+            cases={closedCases}
+            documents={documents}
+            auditLogs={auditLogs}
+            onViewCase={handleViewCase}
+          />
+        );
       case "archive":
         return (
           <ArchiveView
-            cases={archivedCases}
+            cases={closedCases}
             documents={documents}
-            onViewCase={handleViewCase}
+            onViewDocument={handleViewDocument}
+            onDownloadDocument={handleDownloadDocument}
           />
         );
       case "audit":
@@ -549,6 +610,8 @@ const Index = () => {
           currentUser={currentUser}
           title={viewTitles[activeView] || "Dashboard"}
           onMenuToggle={() => setSidebarOpen(true)}
+          onAccountClick={() => handleViewChange("settings")}
+          onHelpClick={() => setGuideOpen(true)}
           onSearch={setGlobalSearchQuery}
           searchResults={globalSearchResults}
           onSearchResultSelect={handleSearchResultSelect}
@@ -609,6 +672,15 @@ const Index = () => {
         onOpenChange={setAddUserOpen}
         onUserCreated={fetchUsers}
       />
+      <EditUserDialog
+        open={editUserOpen}
+        onOpenChange={(open) => {
+          setEditUserOpen(open);
+          if (!open) setSelectedUserForEdit(null);
+        }}
+        user={selectedUserForEdit}
+        onSave={handleSaveUserAccess}
+      />
       <ViewCaseDialog
         open={viewCaseOpen}
         onOpenChange={setViewCaseOpen}
@@ -627,6 +699,42 @@ const Index = () => {
         document={selectedDocument}
         onDownloadDocument={handleDownloadDocument}
       />
+      <OnboardingGuide
+        userId={user.id}
+        userName={currentUser.name}
+        role={currentUser.role}
+        open={guideOpen}
+        onOpenChange={setGuideOpen}
+        onNavigate={handleViewChange}
+      />
+      <AlertDialog
+        open={Boolean(confirmDialog)}
+        onOpenChange={(open) => {
+          if (!open && !isConfirming) setConfirmDialog(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{confirmDialog?.title}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmDialog?.description}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isConfirming}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(event) => {
+                event.preventDefault();
+                handleConfirmAction();
+              }}
+              disabled={isConfirming}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isConfirming ? "Working..." : confirmDialog?.actionLabel}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

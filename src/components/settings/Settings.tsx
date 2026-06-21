@@ -5,12 +5,13 @@ import {
   Database,
   Mail,
   Lock,
-  Eye,
-  EyeOff,
   Save,
   CheckCircle2,
   AlertCircle,
   RotateCcw,
+  UserCircle2,
+  BriefcaseBusiness,
+  Fingerprint,
 } from "lucide-react";
 import { User } from "@/types/legal";
 import { cn } from "@/lib/utils";
@@ -27,8 +28,14 @@ export function Settings({ currentUser }: SettingsProps) {
   const [pushNotifications, setPushNotifications] = useState(true);
   const [hearingReminders, setHearingReminders] = useState(true);
   const [deadlineAlerts, setDeadlineAlerts] = useState(true);
-  const [showApiKey, setShowApiKey] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saved" | "failed">("idle");
+
+  const roleLabel =
+    currentUser.role === "superadmin"
+      ? "Superadmin"
+      : currentUser.role === "admin"
+        ? "Administrator"
+        : "Staff";
 
   useEffect(() => {
     try {
@@ -141,7 +148,7 @@ export function Settings({ currentUser }: SettingsProps) {
           </button>
           <button
             onClick={handleSave}
-            className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90"
+            className="inline-flex items-center gap-2 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-foreground/90 dark:border dark:border-border dark:bg-muted dark:text-foreground dark:hover:bg-muted/80"
           >
             <Save className="h-4 w-4" />
             Save Changes
@@ -150,6 +157,71 @@ export function Settings({ currentUser }: SettingsProps) {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
+        {/* Account Details */}
+        <div className="surface-card overflow-hidden">
+          <div className="border-b border-border p-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-primary/10 p-2">
+                <UserCircle2 className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">Account Details</h3>
+                <p className="text-sm text-muted-foreground">
+                  Your signed-in profile information
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="p-4">
+            <div className="flex items-start gap-4">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-muted text-lg font-bold text-foreground">
+                {currentUser.name
+                  .split(" ")
+                  .map((part) => part[0])
+                  .join("")
+                  .slice(0, 2)
+                  .toUpperCase()}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-lg font-bold text-foreground">
+                  {currentUser.name}
+                </p>
+                <p className="truncate text-sm text-muted-foreground">
+                  {currentUser.email}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-lg border border-border bg-background p-3">
+                <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
+                  <Shield className="h-3.5 w-3.5" />
+                  Role
+                </div>
+                <p className="text-sm font-semibold text-foreground">{roleLabel}</p>
+              </div>
+              <div className="rounded-lg border border-border bg-background p-3">
+                <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
+                  <BriefcaseBusiness className="h-3.5 w-3.5" />
+                  Department
+                </div>
+                <p className="text-sm font-semibold text-foreground">
+                  {currentUser.department || "Legal"}
+                </p>
+              </div>
+              <div className="rounded-lg border border-border bg-background p-3 sm:col-span-2">
+                <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
+                  <Fingerprint className="h-3.5 w-3.5" />
+                  Account ID
+                </div>
+                <p className="break-all text-sm font-semibold text-foreground">
+                  {currentUser.id}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Appearance moved to dashboard */}
 
         {/* Notifications */}
@@ -181,7 +253,9 @@ export function Settings({ currentUser }: SettingsProps) {
                 onClick={() => setEmailNotifications(!emailNotifications)}
                 className={cn(
                   "relative h-6 w-11 rounded-full transition-colors",
-                  emailNotifications ? "bg-accent" : "bg-muted",
+                  emailNotifications
+                    ? "bg-foreground dark:bg-muted-foreground"
+                    : "bg-muted",
                 )}
               >
                 <span
@@ -205,7 +279,9 @@ export function Settings({ currentUser }: SettingsProps) {
                 onClick={() => setPushNotifications(!pushNotifications)}
                 className={cn(
                   "relative h-6 w-11 rounded-full transition-colors",
-                  pushNotifications ? "bg-accent" : "bg-muted",
+                  pushNotifications
+                    ? "bg-foreground dark:bg-muted-foreground"
+                    : "bg-muted",
                 )}
               >
                 <span
@@ -227,7 +303,9 @@ export function Settings({ currentUser }: SettingsProps) {
                 onClick={() => setHearingReminders(!hearingReminders)}
                 className={cn(
                   "relative h-6 w-11 rounded-full transition-colors",
-                  hearingReminders ? "bg-accent" : "bg-muted",
+                  hearingReminders
+                    ? "bg-foreground dark:bg-muted-foreground"
+                    : "bg-muted",
                 )}
               >
                 <span
@@ -249,7 +327,9 @@ export function Settings({ currentUser }: SettingsProps) {
                 onClick={() => setDeadlineAlerts(!deadlineAlerts)}
                 className={cn(
                   "relative h-6 w-11 rounded-full transition-colors",
-                  deadlineAlerts ? "bg-accent" : "bg-muted",
+                  deadlineAlerts
+                    ? "bg-foreground dark:bg-muted-foreground"
+                    : "bg-muted",
                 )}
               >
                 <span
@@ -283,11 +363,7 @@ export function Settings({ currentUser }: SettingsProps) {
               <div className="flex items-center justify-between">
                 <p className="font-medium text-foreground">Current Role</p>
                 <span className="rounded-full bg-accent/20 px-3 py-1 text-xs font-medium text-accent-foreground">
-                  {currentUser.role === "superadmin"
-                    ? "Superadmin"
-                    : currentUser.role === "admin"
-                      ? "Administrator"
-                      : "Staff"}
+                  {roleLabel}
                 </span>
               </div>
             </div>

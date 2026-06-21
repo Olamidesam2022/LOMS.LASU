@@ -11,6 +11,7 @@ import {
   Loader2,
   MessageSquareText,
   Plus,
+  Save,
   Send,
   X,
 } from "lucide-react";
@@ -146,6 +147,48 @@ function formatDate(value?: string | null) {
   });
 }
 
+function formatDateTime(value?: string | null) {
+  if (!value) return "Not set";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("en-NG", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function getTodayInputValue() {
+  const today = new Date();
+  const offsetDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000);
+  return offsetDate.toISOString().slice(0, 10);
+}
+
+function toDateInputValue(value?: string | null) {
+  if (!value) return "";
+  const directDateValue = value.slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(directDateValue)) return directDateValue;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 10);
+}
+
+function toTimeInputValue(value?: string | null) {
+  if (!value || !value.includes("T")) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return localDate.toISOString().slice(11, 16);
+}
+
+function toSittingDateTimeValue(dateValue: string, timeValue: string) {
+  if (!dateValue) return "";
+  if (!timeValue) return dateValue;
+  return new Date(`${dateValue}T${timeValue}`).toISOString();
+}
+
 function relativeTime(value?: string | null) {
   if (!value) return "";
   const date = new Date(value);
@@ -217,6 +260,9 @@ export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
   });
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [isSavingTask, setIsSavingTask] = useState(false);
+  const [sittingDate, setSittingDate] = useState("");
+  const [sittingTime, setSittingTime] = useState("");
+  const [isSavingSittingDate, setIsSavingSittingDate] = useState(false);
 
   const fetchCaseProgress = useCallback(async () => {
     setError(null);
@@ -386,6 +432,11 @@ export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
+  useEffect(() => {
+    setSittingDate(toDateInputValue(state.meta.nextHearing));
+    setSittingTime(toTimeInputValue(state.meta.nextHearing));
+  }, [state.meta.nextHearing]);
+
   const caseRecord = state.caseRecord;
   const caseNumber = state.meta.suitNumber || `Case ${caseId.slice(0, 8)}`;
   const caseTitle = caseRecord?.title || "Untitled case";
@@ -394,6 +445,7 @@ export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
     role === "superadmin" ||
     role === "admin" ||
     normalizedStatus === "in_progress";
+  const todayInputValue = getTodayInputValue();
   const openTaskCount = state.tasks.filter((task) => task.status !== "completed").length;
   const assigneeOptions = useMemo(() => {
     const options = state.profiles.map((profileRow) => ({
@@ -524,6 +576,45 @@ export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
     await fetchCaseProgress();
   };
 
+  const handleSaveSittingDate = async () => {
+    if (!user || !caseRecord || !sittingDate) return;
+    if (sittingDate < todayInputValue) {
+      setError("Choose today or a future sitting date.");
+      return;
+    }
+    const nextSittingValue = toSittingDateTimeValue(sittingDate, sittingTime);
+    if (sittingTime && new Date(nextSittingValue).getTime() < Date.now()) {
+      setError("Choose a future sitting time.");
+      return;
+    }
+
+    setIsSavingSittingDate(true);
+    setError(null);
+    try {
+      const updatedMeta: CaseMeta = {
+        ...state.meta,
+        nextHearing: nextSittingValue,
+      };
+      const { error: caseError } = await supabase
+        .from("cases")
+        .update({
+          description: JSON.stringify(updatedMeta),
+        })
+        .eq("id", caseId);
+      if (caseError) throw caseError;
+      await writeAuditLog({
+        action: "UPDATE",
+        performedBy: user.id,
+        targetId: caseId,
+        resource: "Case",
+        details: `Set sitting date for ${caseNumber} to ${formatDateTime(updatedMeta.nextHearing)}`,
+      });
+      await fetchCaseProgress();
+    } finally {
+      setIsSavingSittingDate(false);
+    }
+  };
+
   const statCards = useMemo(
     () => [
       {
@@ -622,10 +713,46 @@ export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
                   </strong>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Court Date: </span>
-                  <strong className="text-foreground">
-                    {formatDate(state.meta.nextHearing)}
-                  </strong>
+                  <span className="text-muted-foreground">Sitting Date: </span>
+                  <strong className="text-foreground">{formatDateTime(state.meta.nextHearing)}</strong>
+                  {canEdit && (
+                    <div className="mt-2 grid gap-2 sm:grid-cols-[minmax(0,1fr)_8rem_auto]">
+                      <input
+                        type="date"
+                        min={todayInputValue}
+                        value={sittingDate}
+                        onChange={(event) => setSittingDate(event.target.value)}
+                        className="min-h-10 rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary"
+                        aria-label="Future sitting date"
+                      />
+                      <input
+                        type="time"
+                        value={sittingTime}
+                        onChange={(event) => setSittingTime(event.target.value)}
+                        className="min-h-10 rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary"
+                        aria-label="Sitting time"
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleSaveSittingDate}
+                        disabled={
+                          isSavingSittingDate ||
+                          !sittingDate ||
+                          (sittingDate === toDateInputValue(state.meta.nextHearing) &&
+                            sittingTime === toTimeInputValue(state.meta.nextHearing))
+                        }
+                        className="gap-2"
+                      >
+                        {isSavingSittingDate ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Save className="h-4 w-4" />
+                        )}
+                        Save
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <span className="text-muted-foreground">Filing Date: </span>

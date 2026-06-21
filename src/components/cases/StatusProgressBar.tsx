@@ -5,7 +5,6 @@ const statusSteps = [
   { key: "in_progress", label: "In Progress" },
   { key: "pending", label: "Pending" },
   { key: "closed", label: "Closed" },
-  { key: "archived", label: "Archived" },
 ] as const;
 
 const statusIndex: Record<string, number> = {
@@ -19,7 +18,7 @@ const statusIndex: Record<string, number> = {
   "pending response": 2,
   closed: 3,
   completed: 3,
-  archived: 4,
+  archived: 3,
 };
 
 interface StatusProgressBarProps {
@@ -60,7 +59,7 @@ export function StatusProgressBar({ status }: StatusProgressBarProps) {
           );
         })}
       </div>
-      <div className="grid grid-cols-5 gap-2 text-center text-[11px] font-medium text-muted-foreground sm:text-xs">
+      <div className="grid grid-cols-4 gap-2 text-center text-[11px] font-medium text-muted-foreground sm:text-xs">
         {statusSteps.map((step, index) => (
           <span
             key={step.key}
