@@ -14,14 +14,13 @@ interface DashboardProps {
 }
 
 const quickLinks = [
-  { label: "Cases", view: "litigation", icon: Scale, tone: "blue" },
-  { label: "Documents", view: "documents", icon: FileText, tone: "pink" },
-  { label: "Calendar", view: "calendar", icon: CalendarDays, tone: "mint" },
+  { label: "Cases", view: "litigation", icon: Scale },
+  { label: "Documents", view: "documents", icon: FileText },
+  { label: "Calendar", view: "calendar", icon: CalendarDays },
   {
     label: "Users",
     view: "users",
     icon: Users,
-    tone: "sand",
     superadminOnly: true,
   },
 ];
@@ -89,7 +88,7 @@ export function Dashboard({
         </div>
 
         <div className="mt-6 grid gap-4 xl:grid-cols-2">
-          <div className="dashboard-stat-card pastel-blue">
+          <div className="dashboard-stat-card">
             <div className="flex items-center justify-between">
               <span className="dashboard-stat-icon">
                 <Scale className="h-4 w-4" />
@@ -116,15 +115,15 @@ export function Dashboard({
                   className={cn(
                     "h-7 flex-1 rounded-md",
                     index < 5
-                      ? "bg-blue-400/55"
-                      : "border border-dashed border-slate-300/80",
+                      ? "bg-foreground/55"
+                      : "border border-dashed border-border",
                   )}
                 />
               ))}
             </div>
           </div>
 
-          <div className="dashboard-stat-card pastel-cyan">
+          <div className="dashboard-stat-card">
             <div className="flex items-center justify-between">
               <span className="dashboard-stat-icon">
                 <CalendarDays className="h-4 w-4" />
@@ -151,8 +150,8 @@ export function Dashboard({
                   className={cn(
                     "h-7 flex-1 rounded-md",
                     index < Math.min(metrics.urgentHearings, 7)
-                      ? "bg-cyan-500/35"
-                      : "border border-dashed border-slate-300/80",
+                      ? "bg-foreground/35"
+                      : "border border-dashed border-border",
                   )}
                 />
               ))}
@@ -182,7 +181,7 @@ export function Dashboard({
                   <button
                     key={item.label}
                     onClick={() => onNavigate?.(item.view)}
-                    className={cn("dashboard-quick-tile", `tile-${item.tone}`)}
+                    className="dashboard-quick-tile"
                   >
                     <span className="dashboard-quick-icon">
                       <Icon className="h-4 w-4" />

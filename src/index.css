@@ -80,26 +80,6 @@
     --sidebar-ring: 0 0% 90%;
   }
 
-  .dark .dashboard-canvas {
-    background:
-      radial-gradient(circle at 12% 0%, hsl(221 83% 53% / 0.16), transparent 20rem),
-      hsl(var(--background));
-  }
-
-  .dark .dashboard-hero {
-    background:
-      radial-gradient(circle at 86% 0%, hsl(221 83% 53% / 0.16), transparent 18rem),
-      hsl(var(--card));
-  }
-
-  .dark .pastel-blue {
-    background: linear-gradient(135deg, hsl(225 26% 20%), hsl(220 15% 15%));
-  }
-
-  .dark .pastel-cyan {
-    background: linear-gradient(135deg, hsl(197 26% 19%), hsl(220 15% 15%));
-  }
-
   .dark .dashboard-stat-icon {
     background: hsl(0 0% 100% / 0.08);
     color: hsl(210 30% 92%);
@@ -388,14 +368,6 @@
     @apply rounded-3xl border border-border bg-card p-5;
   }
 
-  .pastel-blue {
-    background: hsl(var(--card));
-  }
-
-  .pastel-cyan {
-    background: hsl(var(--card));
-  }
-
   .dashboard-stat-icon {
     @apply flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-foreground;
   }
@@ -465,19 +437,7 @@
     @apply flex h-10 w-10 items-center justify-center rounded-full;
   }
 
-  .tile-blue .dashboard-quick-icon {
-    @apply border border-border bg-background text-foreground;
-  }
-
-  .tile-pink .dashboard-quick-icon {
-    @apply border border-border bg-background text-foreground;
-  }
-
-  .tile-mint .dashboard-quick-icon {
-    @apply border border-border bg-background text-foreground;
-  }
-
-  .tile-sand .dashboard-quick-icon {
+  .dashboard-quick-tile .dashboard-quick-icon {
     @apply border border-border bg-background text-foreground;
   }
 
