@@ -1,4 +1,6 @@
 import { ArrowRight, CalendarDays, Loader2, MapPin, Scale } from "lucide-react";
+import { useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { StatusProgressBar } from "@/components/cases/StatusProgressBar";
 import { useCaseProgressModal } from "@/hooks/useCaseProgressModal";
 import { useCases } from "@/hooks/useCases";
@@ -29,9 +31,17 @@ function getProgressPercent(status?: string | null) {
 export default function ProgressPage() {
   const { openModal } = useCaseProgressModal();
   const { cases, isLoading } = useCases();
+  const [searchParams] = useSearchParams();
+  const focusedCaseId = searchParams.get("case");
   const activeCases = cases.filter(
     (caseItem) => !["Closed", "Archived"].includes(caseItem.status),
   );
+
+  useEffect(() => {
+    if (!isLoading && focusedCaseId) {
+      openModal(focusedCaseId);
+    }
+  }, [focusedCaseId, isLoading, openModal]);
 
   return (
     <div className="space-y-5 p-4 md:p-6">

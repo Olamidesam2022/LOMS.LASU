@@ -15,6 +15,11 @@ interface CaseRow {
   created_at: string;
 }
 
+interface CaseAccessRow {
+  case_id: string;
+  user_id: string;
+}
+
 export interface CaseInput {
   title: string;
   description?: string;
@@ -22,6 +27,8 @@ export interface CaseInput {
   adversaryParty?: string;
   proceduralStage?: string;
   assignedCounsel?: string;
+  assignedTo?: string;
+  assignedUserIds?: string[];
   court?: string;
   nextHearing?: string;
   filingDeadline?: string;
@@ -40,6 +47,7 @@ const parseDescription = (description: string | null) => {
 export const toLitigationCase = (
   row: CaseRow,
   viewer?: { id: string; role?: string | null },
+  assignedUserIds: string[] = [],
 ): LitigationCase => {
   const meta = parseDescription(row.description);
   const createdAt = new Date(row.created_at);
@@ -67,6 +75,7 @@ export const toLitigationCase = (
     creatorEmail: row.creator_email || meta.creatorEmail || "",
     enteredBy,
     assignedTo: row.assigned_to || undefined,
+    assignedUserIds,
     canEdit: canManageAll || ownsRecord,
     canDelete: canManageAll || ownsRecord,
   };
@@ -84,23 +93,68 @@ export function useCases() {
     }
 
     setIsLoading(true);
-    const { data, error } = await supabase
+    const casesQuery = supabase
       .from("cases")
       .select("id,title,description,created_by,creator_email,entered_by,assigned_to,created_at")
       .order("created_at", { ascending: false });
+    const accessQuery =
+      role === "superadmin"
+        ? supabase.from("case_access").select("case_id,user_id")
+        : Promise.resolve({ data: [], error: null });
+
+    const [casesResult, accessResult] = await Promise.all([casesQuery, accessQuery]);
+    const { data, error } = casesResult;
 
     if (error) {
+      console.error("Failed to load cases:", error);
+      setCases([]);
       setIsLoading(false);
-      throw error;
+      return;
     }
+    if (accessResult.error) {
+      console.error("Failed to load case assignments:", accessResult.error);
+    }
+
+    const assignedUsersByCase = new Map<string, string[]>();
+    ((accessResult.error ? [] : accessResult.data || []) as CaseAccessRow[]).forEach((access) => {
+      assignedUsersByCase.set(access.case_id, [
+        ...(assignedUsersByCase.get(access.case_id) || []),
+        access.user_id,
+      ]);
+    });
 
     setCases(
       ((data || []) as CaseRow[]).map((row) =>
-        toLitigationCase(row, { id: user.id, role }),
+        toLitigationCase(row, { id: user.id, role }, assignedUsersByCase.get(row.id) || []),
       ),
     );
     setIsLoading(false);
   }, [isApproved, role, user]);
+
+  const syncCaseAccess = useCallback(
+    async (caseId: string, assignedUserIds: string[]) => {
+      if (!user || role !== "superadmin") return;
+
+      const uniqueUserIds = Array.from(new Set(assignedUserIds.filter(Boolean)));
+      const { error: deleteError } = await supabase
+        .from("case_access")
+        .delete()
+        .eq("case_id", caseId);
+      if (deleteError) throw deleteError;
+
+      if (uniqueUserIds.length === 0) return;
+
+      const { error: insertError } = await supabase.from("case_access").insert(
+        uniqueUserIds.map((userId) => ({
+          case_id: caseId,
+          user_id: userId,
+          granted_by: user.id,
+        })),
+      );
+      if (insertError) throw insertError;
+    },
+    [role, user],
+  );
 
   const createCase = useCallback(
     async (input: CaseInput) => {
@@ -113,6 +167,7 @@ export function useCases() {
           created_by: user.id,
           creator_email: profile?.email || user.email || null,
           entered_by: user.id,
+          assigned_to: input.assignedUserIds?.[0] || input.assignedTo || null,
           description: JSON.stringify({
             description: input.description || "",
             suitNumber: input.suitNumber || "",
@@ -129,6 +184,11 @@ export function useCases() {
         .single();
 
       if (error) throw error;
+      if (input.assignedUserIds !== undefined) {
+        await syncCaseAccess(data.id, input.assignedUserIds);
+      } else if (input.assignedTo) {
+        await syncCaseAccess(data.id, [input.assignedTo]);
+      }
       await writeAuditLog({
         action: "CREATE",
         performedBy: user.id,
@@ -138,7 +198,7 @@ export function useCases() {
       });
       await fetchCases();
     },
-    [fetchCases, user],
+    [fetchCases, syncCaseAccess, user],
   );
 
   const updateCase = useCallback(
@@ -149,10 +209,20 @@ export function useCases() {
         throw new Error("You are not authorized to update this case.");
       }
 
+      const nextAssignedUserIds = input.assignedUserIds;
+      const primaryAssignedUserId =
+        nextAssignedUserIds === undefined
+          ? input.assignedTo
+          : nextAssignedUserIds[0] || "";
+
       const { error } = await supabase
         .from("cases")
         .update({
           title: input.title,
+          assigned_to:
+            nextAssignedUserIds === undefined && input.assignedTo === undefined
+              ? current.assignedTo || null
+              : primaryAssignedUserId || null,
           description: JSON.stringify({
             description: input.description || "",
             suitNumber: input.suitNumber || "",
@@ -168,6 +238,9 @@ export function useCases() {
         .eq("id", id);
 
       if (error) throw error;
+      if (nextAssignedUserIds !== undefined) {
+        await syncCaseAccess(id, nextAssignedUserIds);
+      }
       await writeAuditLog({
         action: "UPDATE",
         performedBy: user.id,
@@ -177,7 +250,7 @@ export function useCases() {
       });
       await fetchCases();
     },
-    [cases, fetchCases, user],
+    [cases, fetchCases, syncCaseAccess, user],
   );
 
   const deleteCase = useCallback(

@@ -13,6 +13,7 @@ import {
   Plus,
   Save,
   Send,
+  Trash2,
   X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,6 +32,8 @@ interface CaseRow {
   id: string;
   title: string;
   description: string | null;
+  created_by?: string | null;
+  assigned_to?: string | null;
   created_at?: string | null;
 }
 
@@ -248,7 +251,7 @@ export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<
-    "overview" | "notes" | "tasks" | "documents" | "timeline"
+    "overview" | "notes" | "tasks" | "documents" | "activity"
   >("overview");
   const [noteContent, setNoteContent] = useState("");
   const [taskInput, setTaskInput] = useState({
@@ -270,7 +273,7 @@ export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
 
     const caseQuery = supabase
       .from("cases")
-      .select("id,title,description,created_at")
+      .select("id,title,description,created_by,assigned_to,created_at")
       .eq("id", caseId)
       .single();
     const notesQuery = supabase
@@ -416,6 +419,20 @@ export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
           });
         },
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "audit_logs",
+          filter: `target_id=eq.${caseId}`,
+        },
+        () => {
+          fetchCaseProgress().catch((refreshError) => {
+            console.error("Failed to refresh case activity:", refreshError);
+          });
+        },
+      )
       .subscribe();
 
     return () => {
@@ -447,6 +464,13 @@ export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
     normalizedStatus === "in_progress";
   const todayInputValue = getTodayInputValue();
   const openTaskCount = state.tasks.filter((task) => task.status !== "completed").length;
+  const completedTaskCount = state.tasks.filter((task) => task.status === "completed").length;
+  const taskProgress =
+    state.tasks.length === 0
+      ? 0
+      : Math.round((completedTaskCount / state.tasks.length) * 100);
+  const activeTasks = state.tasks.filter((task) => task.status !== "completed");
+  const completedTasks = state.tasks.filter((task) => task.status === "completed");
   const assigneeOptions = useMemo(() => {
     const options = state.profiles.map((profileRow) => ({
       id: profileRow.id,
@@ -692,6 +716,22 @@ export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
           {!isLoading && !error && caseRecord && (
             <>
               <StatusProgressBar status={state.meta.status} />
+              <div className="rounded-lg border border-border bg-background p-4">
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="font-semibold text-foreground">Task progress</span>
+                  <span className="text-muted-foreground">
+                    {completedTaskCount} of {state.tasks.length} complete
+                  </span>
+                </div>
+                <div className="mt-3 h-2 overflow-hidden rounded bg-muted">
+                  <div
+                    className={`h-full rounded transition-all duration-500 ${
+                      taskProgress === 100 ? "bg-success" : "bg-primary"
+                    }`}
+                    style={{ width: `${taskProgress}%` }}
+                  />
+                </div>
+              </div>
 
               <div className="grid gap-3 rounded-lg border border-border bg-background p-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
                 <div>
@@ -789,11 +829,11 @@ export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
 
               <div className="flex gap-2 overflow-x-auto border-b border-border">
                 {[
-                  { id: "overview", label: "Overview" },
                   { id: "notes", label: "Notes" },
-                  { id: "tasks", label: "Tasks" },
                   { id: "documents", label: "Documents" },
-                  { id: "timeline", label: "Timeline" },
+                  { id: "tasks", label: "Tasks" },
+                  { id: "activity", label: "Activity" },
+                  { id: "overview", label: "Overview" },
                 ].map((tab) => (
                   <button
                     key={tab.id}
@@ -883,6 +923,17 @@ export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
                 <section className="rounded-lg border border-border bg-background">
                   <div className="border-b border-border p-4">
                     <h3 className="font-semibold text-foreground">Task Assignment</h3>
+                    <div className="mt-3 h-2 overflow-hidden rounded bg-muted">
+                      <div
+                        className={`h-full rounded transition-all duration-500 ${
+                          taskProgress === 100 ? "bg-success" : "bg-primary"
+                        }`}
+                        style={{ width: `${taskProgress}%` }}
+                      />
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {completedTaskCount} of {state.tasks.length} tasks complete
+                    </p>
                   </div>
                   <div className="grid gap-3 p-4 md:grid-cols-2">
                     <input
@@ -956,12 +1007,12 @@ export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
                     </Button>
                   </div>
                   <div className="divide-y divide-border">
-                    {state.tasks.length === 0 && (
+                    {activeTasks.length === 0 && (
                       <p className="p-4 text-sm text-muted-foreground">
-                        No tasks have been assigned for this case yet.
+                        No active tasks have been assigned for this case.
                       </p>
                     )}
-                    {state.tasks.map((task) => (
+                    {activeTasks.map((task) => (
                       <div key={task.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
@@ -983,27 +1034,71 @@ export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
                             )}
                           </p>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            handleTaskStatusChange(
-                              task,
-                              task.status === "completed" ? "open" : "completed",
-                            )
-                          }
-                          className="gap-2"
-                        >
-                          {task.status === "completed" ? (
-                            <CheckCircle2 className="h-4 w-4" />
-                          ) : (
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleTaskStatusChange(task, "completed")}
+                            className="gap-2"
+                          >
                             <Circle className="h-4 w-4" />
+                            Mark Done
+                          </Button>
+                          {task.createdBy === user?.id && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={async () => {
+                                const { error: deleteError } = await supabase
+                                  .from("case_tasks")
+                                  .delete()
+                                  .eq("id", task.id);
+                                if (deleteError) throw deleteError;
+                                await fetchCaseProgress();
+                              }}
+                              className="gap-2 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Delete
+                            </Button>
                           )}
-                          {task.status === "completed" ? "Completed" : "Mark Done"}
-                        </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
+                  {completedTasks.length > 0 && (
+                    <details className="border-t border-border">
+                      <summary className="cursor-pointer p-4 text-sm font-semibold text-foreground">
+                        Completed tasks ({completedTasks.length})
+                      </summary>
+                      <div className="divide-y divide-border">
+                        {completedTasks.map((task) => (
+                          <div
+                            key={task.id}
+                            className="flex flex-col gap-3 p-4 text-sm sm:flex-row sm:items-start sm:justify-between"
+                          >
+                            <div className="min-w-0">
+                              <p className="font-semibold text-muted-foreground line-through">
+                                {task.title}
+                              </p>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                Completed {relativeTime(task.completedAt?.toISOString())}
+                              </p>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleTaskStatusChange(task, "open")}
+                              className="gap-2"
+                            >
+                              <CheckCircle2 className="h-4 w-4" />
+                              Reopen
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  )}
                 </section>
               )}
 
@@ -1056,10 +1151,10 @@ export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
                 </section>
               )}
 
-              {activeTab === "timeline" && (
+              {activeTab === "activity" && (
                 <section className="rounded-lg border border-border bg-background">
                   <div className="border-b border-border p-4">
-                    <h3 className="font-semibold text-foreground">Case Timeline</h3>
+                    <h3 className="font-semibold text-foreground">Case Activity</h3>
                   </div>
                   <div className="divide-y divide-border">
                     {timelineItems.length === 0 && (

@@ -647,6 +647,8 @@ const Index = () => {
           if (!open) setSelectedCase(null);
         }}
         caseItem={selectedCase}
+        users={dbUsers}
+        canAssignCase={role === "superadmin"}
         onCreateCase={(input) =>
           selectedCase ? updateCase(selectedCase.id, input) : createCase(input)
         }

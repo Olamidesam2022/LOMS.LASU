@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CaseStatus, LitigationCase, ProceduralStage } from '@/types/legal';
+import { CaseStatus, LitigationCase, ProceduralStage, User } from '@/types/legal';
 import { toast } from 'sonner';
 
 interface AddCaseDialogProps {
@@ -31,21 +31,34 @@ interface AddCaseDialogProps {
     adversaryParty?: string;
     proceduralStage?: string;
     assignedCounsel?: string;
+    assignedTo?: string;
+    assignedUserIds?: string[];
     court?: string;
     nextHearing?: string;
     filingDeadline?: string;
     status?: string;
   }) => Promise<void>;
   caseItem?: LitigationCase | null;
+  users?: User[];
+  canAssignCase?: boolean;
 }
 
-export function AddCaseDialog({ open, onOpenChange, onCreateCase, caseItem }: AddCaseDialogProps) {
+export function AddCaseDialog({
+  open,
+  onOpenChange,
+  onCreateCase,
+  caseItem,
+  users = [],
+  canAssignCase = false,
+}: AddCaseDialogProps) {
   const [formData, setFormData] = useState({
     suitNumber: '',
     caseTitle: '',
     adversaryParty: '',
     proceduralStage: '' as ProceduralStage | '',
     assignedCounsel: '',
+    assignedTo: '',
+    assignedUserIds: [] as string[],
     court: '',
     nextHearing: '',
     filingDeadline: '',
@@ -54,6 +67,13 @@ export function AddCaseDialog({ open, onOpenChange, onCreateCase, caseItem }: Ad
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const assignableUsers = useMemo(
+    () =>
+      users
+        .filter((user) => user.status === "approved")
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [users],
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -72,6 +92,12 @@ export function AddCaseDialog({ open, onOpenChange, onCreateCase, caseItem }: Ad
         adversaryParty: caseItem.adversaryParty === "Unspecified" ? "" : caseItem.adversaryParty,
         proceduralStage: caseItem.proceduralStage,
         assignedCounsel: caseItem.assignedCounsel === "Unassigned" ? "" : caseItem.assignedCounsel,
+        assignedTo: caseItem.assignedTo || '',
+        assignedUserIds: caseItem.assignedUserIds?.length
+          ? caseItem.assignedUserIds
+          : caseItem.assignedTo
+            ? [caseItem.assignedTo]
+            : [],
         court: caseItem.court === "Unspecified" ? "" : caseItem.court,
         nextHearing: caseItem.nextHearing.toISOString().slice(0, 10),
         filingDeadline: meta.filingDeadline || '',
@@ -85,6 +111,8 @@ export function AddCaseDialog({ open, onOpenChange, onCreateCase, caseItem }: Ad
         adversaryParty: '',
         proceduralStage: '',
         assignedCounsel: '',
+        assignedTo: '',
+        assignedUserIds: [],
         court: '',
         nextHearing: '',
         filingDeadline: '',
@@ -111,6 +139,8 @@ export function AddCaseDialog({ open, onOpenChange, onCreateCase, caseItem }: Ad
         adversaryParty: formData.adversaryParty,
         proceduralStage: formData.proceduralStage || "Mention",
         assignedCounsel: formData.assignedCounsel,
+        assignedTo: canAssignCase ? formData.assignedTo : undefined,
+        assignedUserIds: canAssignCase ? formData.assignedUserIds : undefined,
         court: formData.court,
         nextHearing: formData.nextHearing,
         filingDeadline: formData.filingDeadline,
@@ -138,6 +168,8 @@ export function AddCaseDialog({ open, onOpenChange, onCreateCase, caseItem }: Ad
         adversaryParty: '',
         proceduralStage: '',
         assignedCounsel: '',
+        assignedTo: '',
+        assignedUserIds: [],
         court: '',
         nextHearing: '',
         filingDeadline: '',
@@ -152,6 +184,24 @@ export function AddCaseDialog({ open, onOpenChange, onCreateCase, caseItem }: Ad
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleAssignedUserToggle = (userId: string) => {
+    setFormData((prev) => {
+      const assignedUserIds = prev.assignedUserIds.includes(userId)
+        ? prev.assignedUserIds.filter((id) => id !== userId)
+        : [...prev.assignedUserIds, userId];
+      const selectedUsers = assignableUsers.filter((account) =>
+        assignedUserIds.includes(account.id),
+      );
+
+      return {
+        ...prev,
+        assignedTo: selectedUsers[0]?.id || "",
+        assignedUserIds,
+        assignedCounsel: selectedUsers.map((account) => account.name).join(", "),
+      };
+    });
   };
 
   return (
@@ -205,6 +255,46 @@ export function AddCaseDialog({ open, onOpenChange, onCreateCase, caseItem }: Ad
             />
           </div>
 
+          {canAssignCase && (
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+              <div className="space-y-2">
+                <Label>Assign case to accounts</Label>
+                <div className="max-h-56 overflow-y-auto rounded-lg border border-border bg-card">
+                  {assignableUsers.length === 0 ? (
+                    <p className="p-3 text-sm text-muted-foreground">
+                      No approved accounts available
+                    </p>
+                  ) : (
+                    assignableUsers.map((account) => (
+                      <label
+                        key={account.id}
+                        className="flex cursor-pointer items-start gap-3 border-b border-border p-3 text-sm last:border-0 hover:bg-muted/50"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.assignedUserIds.includes(account.id)}
+                          onChange={() => handleAssignedUserToggle(account.id)}
+                          className="mt-1 h-4 w-4"
+                        />
+                        <span className="min-w-0">
+                          <span className="block font-semibold text-foreground">
+                            {account.name}
+                          </span>
+                          <span className="block truncate text-xs text-muted-foreground">
+                            {account.email} - {account.role}
+                          </span>
+                        </span>
+                      </label>
+                    ))
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Every selected account will automatically see this case after it is saved.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="proceduralStage">Procedural Stage</Label>
@@ -248,9 +338,10 @@ export function AddCaseDialog({ open, onOpenChange, onCreateCase, caseItem }: Ad
               <Label htmlFor="assignedCounsel">Assigned Counsel</Label>
               <Input
                 id="assignedCounsel"
-                placeholder="e.g., Barr. Adamu Johnson"
+                placeholder={canAssignCase ? "Filled from assigned account" : "e.g., Barr. Adamu Johnson"}
                 value={formData.assignedCounsel}
                 onChange={(e) => setFormData(prev => ({ ...prev, assignedCounsel: e.target.value }))}
+                readOnly={canAssignCase && Boolean(formData.assignedTo)}
               />
             </div>
 

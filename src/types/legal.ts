@@ -39,6 +39,7 @@ export interface LitigationCase {
   creatorEmail?: string;
   enteredBy?: string;
   assignedTo?: string;
+  assignedUserIds?: string[];
   canEdit?: boolean;
   canDelete?: boolean;
 }
