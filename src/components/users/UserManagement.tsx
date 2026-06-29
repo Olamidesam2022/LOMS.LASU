@@ -20,7 +20,7 @@ interface UserManagementProps {
   currentUser: User;
   onAddUser?: () => void;
   onEditUser?: (user: User) => void;
-  onDeactivateUser?: (user: User) => void;
+  onDeleteUser?: (user: User) => void;
 }
 
 const roleStyles: Record<UserRole, { label: string; color: string }> = {
@@ -29,11 +29,19 @@ const roleStyles: Record<UserRole, { label: string; color: string }> = {
   staff: { label: 'Staff', color: 'bg-info/10 text-info' },
 };
 
-export function UserManagement({ users, currentUser, onAddUser, onEditUser, onDeactivateUser }: UserManagementProps) {
+export function UserManagement({ users, currentUser, onAddUser, onEditUser, onDeleteUser }: UserManagementProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
   const [page, setPage] = useState(1);
   const pageSize = 10;
+  const canManageUsers = Boolean(onEditUser || onDeleteUser);
+  const availableRoleFilters: Array<UserRole | 'all'> =
+    currentUser.role === 'admin'
+      ? ['all', 'staff']
+      : ['all', 'superadmin', 'admin', 'staff'];
+  const tableGridClass = canManageUsers
+    ? "md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_9rem_auto]"
+    : "md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_9rem]";
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = 
@@ -60,13 +68,15 @@ export function UserManagement({ users, currentUser, onAddUser, onEditUser, onDe
             Role-based access control (RBAC) administration
           </p>
         </div>
-        <button 
-          onClick={onAddUser}
-          className="gold-button flex items-center gap-2 rounded-lg px-4 py-2.5"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Add User</span>
-        </button>
+        {onAddUser && (
+          <button
+            onClick={onAddUser}
+            className="gold-button flex items-center gap-2 rounded-lg px-4 py-2.5"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Add User</span>
+          </button>
+        )}
       </div>
 
       {/* Role Distribution */}
@@ -123,7 +133,7 @@ export function UserManagement({ users, currentUser, onAddUser, onEditUser, onDe
           />
         </div>
         <div className="flex gap-2">
-          {(['all', 'superadmin', 'admin', 'staff'] as const).map(role => (
+          {availableRoleFilters.map(role => (
             <button
               key={role}
               onClick={() => setRoleFilter(role)}
@@ -142,11 +152,11 @@ export function UserManagement({ users, currentUser, onAddUser, onEditUser, onDe
 
       {/* Users List */}
       <AppTableShell>
-        <div className="table-header hidden grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_9rem_auto] gap-3 px-4 py-3 md:grid">
+        <div className={cn("table-header hidden gap-3 px-4 py-3 md:grid", tableGridClass)}>
           <span>User</span>
           <span>Department</span>
           <span>Status</span>
-          <span className="text-right">Actions</span>
+          {canManageUsers && <span className="text-right">Actions</span>}
         </div>
         {pagedUsers.map((user, index) => {
           const isCurrentUser = user.id === currentUser.id;
@@ -155,7 +165,8 @@ export function UserManagement({ users, currentUser, onAddUser, onEditUser, onDe
             <div
               key={user.id}
               className={cn(
-                "clean-list-row animate-fade-in md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_9rem_auto] md:items-center",
+                "clean-list-row animate-fade-in md:items-center",
+                tableGridClass,
                 isCurrentUser && "bg-primary/5"
               )}
               style={{ animationDelay: `${index * 50}ms` }}
@@ -192,26 +203,34 @@ export function UserManagement({ users, currentUser, onAddUser, onEditUser, onDe
                 )}
               </div>
 
-              <div className="flex items-center gap-1 md:justify-end">
-                <button onClick={() => onEditUser?.(user)} className="icon-button">
-                  <Edit className="h-4 w-4" />
-                </button>
-                <button onClick={() => onEditUser?.(user)} className="icon-button">
-                  <MoreHorizontal className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => onDeactivateUser?.(user)}
-                  className={cn(
-                    "icon-button",
-                    isCurrentUser
-                      ? "cursor-not-allowed text-muted-foreground/50"
-                      : "hover:bg-destructive/10 hover:text-destructive"
+              {canManageUsers && (
+                <div className="flex items-center gap-1 md:justify-end">
+                  {onEditUser && (
+                    <>
+                      <button onClick={() => onEditUser(user)} className="icon-button">
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button onClick={() => onEditUser(user)} className="icon-button">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </button>
+                    </>
                   )}
-                  disabled={isCurrentUser}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
+                  {onDeleteUser && (
+                    <button
+                      onClick={() => onDeleteUser(user)}
+                      className={cn(
+                        "icon-button",
+                        isCurrentUser
+                          ? "cursor-not-allowed text-muted-foreground/50"
+                          : "hover:bg-destructive/10 hover:text-destructive"
+                      )}
+                      disabled={isCurrentUser}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}

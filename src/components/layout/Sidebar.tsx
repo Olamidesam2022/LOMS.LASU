@@ -88,7 +88,7 @@ const navItems: NavItem[] = [
     roles: ["superadmin", "admin", "staff"],
   },
   { id: "audit", label: "Audit Trail", icon: ClipboardList, roles: ["superadmin", "admin"] },
-  { id: "users", label: "User Management", icon: Users, roles: ["superadmin"] },
+  { id: "users", label: "User Management", icon: Users, roles: ["superadmin", "admin"] },
   {
     id: "settings",
     label: "Settings",

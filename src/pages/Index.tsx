@@ -87,7 +87,9 @@ const Index = () => {
     if (pathname.startsWith("/app/archive")) return "archive";
     if (pathname.startsWith("/app/cases")) return "litigation";
     if (pathname.startsWith("/app/audit")) return "audit";
-    if (pathname.startsWith("/app/users")) return role === "superadmin" ? "users" : "unauthorized";
+    if (pathname.startsWith("/app/users")) {
+      return role === "superadmin" || role === "admin" ? "users" : "unauthorized";
+    }
     if (pathname.startsWith("/app/settings")) return "settings";
     return "dashboard";
   };
@@ -106,7 +108,7 @@ const Index = () => {
   } = useAdvisoryRequests();
   const { documents, createDocument, downloadDocument, deleteDocument } = useDocuments();
   const { auditLogs } = useAuditLogs();
-  const { users: dbUsers, fetchUsers, updateUser } = useProfiles();
+  const { users: dbUsers, fetchUsers, updateUser, deleteUser } = useProfiles();
 
   // Dialog states
   const [addCaseOpen, setAddCaseOpen] = useState(false);
@@ -131,7 +133,7 @@ const Index = () => {
     useState<LegacyUser | null>(null);
 
   useEffect(() => {
-    if (user && role === "superadmin") {
+    if (user && (role === "superadmin" || role === "admin")) {
       fetchUsers();
     }
   }, [fetchUsers, user, role]);
@@ -184,8 +186,8 @@ const Index = () => {
   };
 
   const handleViewChange = (viewId: string) => {
-    if (viewId === "users" && role !== "superadmin") {
-      toast.error("Only superadmin accounts can access user management.");
+    if (viewId === "users" && role !== "superadmin" && role !== "admin") {
+      toast.error("Only admin and superadmin accounts can access user management.");
       navigate("/app", { replace: true });
       return;
     }
@@ -343,22 +345,22 @@ const Index = () => {
     }
   };
 
-  const handleDeactivateUser = async (legacyUser: LegacyUser) => {
+  const handleDeleteUser = async (legacyUser: LegacyUser) => {
     if (legacyUser.id === user?.id) {
-      toast.error("You cannot deactivate your own account.");
+      toast.error("You cannot delete your own account.");
       return;
     }
 
     setConfirmDialog({
-      title: "Deactivate user?",
-      description: `${legacyUser.name} will lose approved access until a superadmin restores the account status.`,
-      actionLabel: "Deactivate user",
+      title: "Delete user?",
+      description: `This will permanently remove ${legacyUser.name}'s account and profile from the workspace.`,
+      actionLabel: "Delete user",
       onConfirm: async () => {
         try {
-          await updateUser(legacyUser.id, { status: "rejected" });
-          toast.success("User deactivated.");
+          await deleteUser(legacyUser.id);
+          toast.success("User deleted.");
         } catch (error: any) {
-          toast.error("Failed to deactivate user", {
+          toast.error("Failed to delete user", {
             description: error.message || "Please try again.",
           });
         }
@@ -548,12 +550,12 @@ const Index = () => {
       case "audit":
         return <AuditTrail logs={auditLogs} />;
       case "users":
-        if (role !== "superadmin") {
+        if (role !== "superadmin" && role !== "admin") {
           return (
             <div className="flex min-h-[22rem] flex-col items-center justify-center p-6 text-center">
               <h2 className="modern-page-title">Unauthorized</h2>
               <p className="mt-2 text-sm font-medium text-muted-foreground">
-                Only superadmin accounts can access user management.
+                Only admin and superadmin accounts can access user management.
               </p>
             </div>
           );
@@ -562,9 +564,9 @@ const Index = () => {
           <UserManagement
             users={dbUsers}
             currentUser={currentUser}
-            onAddUser={() => setAddUserOpen(true)}
-            onEditUser={handleEditUser}
-            onDeactivateUser={handleDeactivateUser}
+            onAddUser={role === "superadmin" ? () => setAddUserOpen(true) : undefined}
+            onEditUser={role === "superadmin" ? handleEditUser : undefined}
+            onDeleteUser={role === "superadmin" ? handleDeleteUser : undefined}
           />
         );
       case "settings":
@@ -615,6 +617,7 @@ const Index = () => {
           onSearch={setGlobalSearchQuery}
           searchResults={globalSearchResults}
           onSearchResultSelect={handleSearchResultSelect}
+          onPendingApprovalsClick={() => handleViewChange("users")}
         />
         <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background">
           {isPageLoading ? (
@@ -648,7 +651,7 @@ const Index = () => {
         }}
         caseItem={selectedCase}
         users={dbUsers}
-        canAssignCase={role === "superadmin"}
+        canAssignCase={role === "admin"}
         onCreateCase={(input) =>
           selectedCase ? updateCase(selectedCase.id, input) : createCase(input)
         }

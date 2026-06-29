@@ -70,7 +70,7 @@ export function AddCaseDialog({
   const assignableUsers = useMemo(
     () =>
       users
-        .filter((user) => user.status === "approved")
+        .filter((user) => user.status === "approved" && user.role === "staff")
         .sort((a, b) => a.name.localeCompare(b.name)),
     [users],
   );
@@ -262,7 +262,7 @@ export function AddCaseDialog({
                 <div className="max-h-56 overflow-y-auto rounded-lg border border-border bg-card">
                   {assignableUsers.length === 0 ? (
                     <p className="p-3 text-sm text-muted-foreground">
-                      No approved accounts available
+                      No approved legal user accounts available
                     </p>
                   ) : (
                     assignableUsers.map((account) => (

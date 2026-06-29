@@ -27,7 +27,10 @@ export default function SignUp() {
       if (error) throw error;
 
       toast.success("Signup submitted. Your account is awaiting superadmin approval.");
-      navigate("/login");
+      navigate("/awaiting-approval", {
+        replace: true,
+        state: { email, fullName, role: requestedRole },
+      });
     } catch (err: any) {
       console.error(err);
       toast.error(err?.message || "Signup failed");

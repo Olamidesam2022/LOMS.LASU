@@ -30,6 +30,7 @@ interface HeaderProps {
   onSearch?: (query: string) => void;
   searchResults?: HeaderSearchResult[];
   onSearchResultSelect?: (result: HeaderSearchResult) => void;
+  onPendingApprovalsClick?: () => void;
 }
 
 export function Header({
@@ -41,6 +42,7 @@ export function Header({
   onSearch,
   searchResults = [],
   onSearchResultSelect,
+  onPendingApprovalsClick,
 }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchResults, setShowSearchResults] = useState(false);
@@ -51,6 +53,9 @@ export function Header({
   const { notifications, markAsRead, markAllAsRead } = useNotifications();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+  const storedUnreadCount = notifications.filter(
+    (n) => !n.read && n.kind !== "pending_approval",
+  ).length;
   const canShowSearchResults = searchQuery.trim().length >= 2 && showSearchResults;
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -224,7 +229,7 @@ export function Header({
                   <h3 className="font-semibold text-foreground">
                     Notifications
                   </h3>
-                  {unreadCount > 0 && (
+                  {storedUnreadCount > 0 && (
                     <button
                       onClick={() => markAllAsRead().catch(console.error)}
                       className="text-xs font-semibold text-primary hover:underline"
@@ -245,9 +250,15 @@ export function Header({
                       return (
                         <div
                           key={notification.id}
-                          onClick={() =>
-                            markAsRead(notification.id).catch(console.error)
-                          }
+                          onClick={() => {
+                            if (notification.kind === "pending_approval") {
+                              setShowNotifications(false);
+                              onPendingApprovalsClick?.();
+                              return;
+                            }
+
+                            markAsRead(notification.id).catch(console.error);
+                          }}
                           className={cn(
                             "flex gap-3 p-3 cursor-pointer transition-colors hover:bg-muted/50 border-b border-border last:border-0",
                             !notification.read && "bg-primary/5",

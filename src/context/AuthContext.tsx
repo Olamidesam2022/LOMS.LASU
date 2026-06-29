@@ -129,15 +129,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) return { error: new Error(error.message) };
     if (!data.user) return { error: new Error("Signup did not return a user.") };
 
-    const { error: profileError } = await supabase.from("profiles").upsert({
-      id: data.user.id,
-      email,
-      full_name: fullName,
-      role,
-      status: "pending",
-    });
+    const activeSession =
+      data.session ?? (await supabase.auth.getSession()).data.session;
 
-    if (profileError) return { error: new Error(profileError.message) };
+    if (activeSession) {
+      const { data: existingProfile, error: lookupError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", data.user.id)
+        .maybeSingle();
+
+      if (lookupError) return { error: new Error(lookupError.message) };
+
+      if (!existingProfile) {
+        const { error: profileError } = await supabase.from("profiles").insert({
+          id: data.user.id,
+          email,
+          full_name: fullName,
+          role,
+          status: "pending",
+        });
+
+        if (profileError && profileError.code !== "23505") {
+          return { error: new Error(profileError.message) };
+        }
+      }
+    }
 
     await supabase.auth.signOut();
     return { error: null };
@@ -158,39 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq("id", data.user.id)
       .maybeSingle();
 
-    let nextProfile = profileData as UserProfile | null;
-
-    if (!nextProfile && !profileError) {
-      const fullName =
-        (data.user.user_metadata?.full_name as string | undefined) ||
-        data.user.email ||
-        "User";
-      const requestedRole =
-        data.user.user_metadata?.requested_role === "admin" ? "admin" : "staff";
-
-      const { data: insertedProfile, error: insertError } = await supabase
-        .from("profiles")
-        .insert({
-          id: data.user.id,
-          email: data.user.email || email,
-          full_name: fullName,
-          role: requestedRole,
-          status: "pending",
-        })
-        .select("id,email,full_name,role,status,created_at")
-        .single();
-
-      if (insertError) {
-        await supabase.auth.signOut();
-        return {
-          error: new Error(
-            insertError.message || "No profile exists for this account.",
-          ),
-        };
-      }
-
-      nextProfile = insertedProfile as UserProfile;
-    }
+    const nextProfile = profileData as UserProfile | null;
 
     if (profileError || !nextProfile) {
       await supabase.auth.signOut();

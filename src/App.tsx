@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
+import AwaitingApproval from "./pages/AwaitingApproval";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (status === "pending") {
+    return <Navigate to="/awaiting-approval" replace />;
   }
 
   if (!isApproved) {
@@ -70,6 +75,14 @@ const AppRoutes = () => (
       element={
         <PublicRoute>
           <SignUp />
+        </PublicRoute>
+      }
+    />
+    <Route
+      path="/awaiting-approval"
+      element={
+        <PublicRoute>
+          <AwaitingApproval />
         </PublicRoute>
       }
     />

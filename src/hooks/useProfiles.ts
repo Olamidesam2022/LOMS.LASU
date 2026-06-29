@@ -7,7 +7,7 @@ interface ProfileRow {
   id: string;
   email: string;
   full_name: string;
-  role: AppRole;
+  role: AppRole | "legal_officer";
   status: ProfileStatus;
   created_at: string;
 }
@@ -16,7 +16,7 @@ const toUser = (profile: ProfileRow): User => ({
   id: profile.id,
   name: profile.full_name || profile.email,
   email: profile.email,
-  role: profile.role,
+  role: profile.role === "legal_officer" ? "staff" : profile.role,
   status: profile.status,
   department: "Legal",
 });
@@ -28,7 +28,7 @@ export function useProfiles() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async () => {
-    if (role !== "superadmin") {
+    if (role !== "superadmin" && role !== "admin") {
       setUsers([]);
       setError(null);
       return;
@@ -37,10 +37,18 @@ export function useProfiles() {
     setIsLoading(true);
     setError(null);
 
-    const { data, error } = await supabase
+    let query = supabase
       .from("profiles")
       .select("id,email,full_name,role,status,created_at")
       .order("created_at", { ascending: false });
+
+    if (role === "admin") {
+      query = query.eq("status", "approved");
+    } else {
+      query = query.neq("status", "rejected");
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       setError(error.message);
@@ -48,7 +56,15 @@ export function useProfiles() {
       throw error;
     }
 
-    setUsers(((data || []) as ProfileRow[]).map(toUser));
+    const rows = (data || []) as ProfileRow[];
+    const visibleRows =
+      role === "admin"
+        ? rows.filter((profile) =>
+            ["staff", "legal_officer"].includes(String(profile.role)),
+          )
+        : rows;
+
+    setUsers(visibleRows.map(toUser));
     setIsLoading(false);
   }, [role]);
 
@@ -61,12 +77,27 @@ export function useProfiles() {
     [fetchUsers],
   );
 
+  const deleteUser = useCallback(
+    async (id: string) => {
+      if (role !== "superadmin") {
+        throw new Error("Only superadmin accounts can delete users.");
+      }
+
+      const { error } = await supabase.rpc("delete_user_account", {
+        target_user_id: id,
+      });
+      if (error) throw error;
+      await fetchUsers();
+    },
+    [fetchUsers, role],
+  );
+
   useEffect(() => {
     fetchUsers().catch(console.error);
   }, [fetchUsers]);
 
   useEffect(() => {
-    if (role !== "superadmin") return;
+    if (role !== "superadmin" && role !== "admin") return;
 
     const refreshOnFocus = () => {
       fetchUsers().catch(console.error);
@@ -87,5 +118,5 @@ export function useProfiles() {
     };
   }, [fetchUsers, role]);
 
-  return { users, fetchUsers, updateUser, isLoading, error };
+  return { users, fetchUsers, updateUser, deleteUser, isLoading, error };
 }

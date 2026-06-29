@@ -52,7 +52,8 @@ export const toLitigationCase = (
   const meta = parseDescription(row.description);
   const createdAt = new Date(row.created_at);
   const enteredBy = row.entered_by || meta.enteredBy || row.created_by;
-  const canManageAll = viewer?.role === "superadmin";
+  const canEditAll = viewer?.role === "superadmin" || viewer?.role === "admin";
+  const canDeleteAll = viewer?.role === "superadmin";
   const ownsRecord =
     !!viewer?.id &&
     (row.created_by === viewer.id ||
@@ -76,8 +77,8 @@ export const toLitigationCase = (
     enteredBy,
     assignedTo: row.assigned_to || undefined,
     assignedUserIds,
-    canEdit: canManageAll || ownsRecord,
-    canDelete: canManageAll || ownsRecord,
+    canEdit: canEditAll || ownsRecord,
+    canDelete: canDeleteAll || ownsRecord,
   };
 };
 
@@ -98,7 +99,7 @@ export function useCases() {
       .select("id,title,description,created_by,creator_email,entered_by,assigned_to,created_at")
       .order("created_at", { ascending: false });
     const accessQuery =
-      role === "superadmin"
+      role === "superadmin" || role === "admin"
         ? supabase.from("case_access").select("case_id,user_id")
         : Promise.resolve({ data: [], error: null });
 
@@ -133,7 +134,7 @@ export function useCases() {
 
   const syncCaseAccess = useCallback(
     async (caseId: string, assignedUserIds: string[]) => {
-      if (!user || role !== "superadmin") return;
+      if (!user || role !== "admin") return;
 
       const uniqueUserIds = Array.from(new Set(assignedUserIds.filter(Boolean)));
       const { error: deleteError } = await supabase
@@ -159,6 +160,9 @@ export function useCases() {
   const createCase = useCallback(
     async (input: CaseInput) => {
       if (!user) throw new Error("You must be logged in to create a case.");
+      const canAssignCases = role === "admin";
+      const assignedUserIds = canAssignCases ? input.assignedUserIds : undefined;
+      const assignedTo = canAssignCases ? input.assignedTo : undefined;
 
       const { data, error } = await supabase
         .from("cases")
@@ -167,7 +171,7 @@ export function useCases() {
           created_by: user.id,
           creator_email: profile?.email || user.email || null,
           entered_by: user.id,
-          assigned_to: input.assignedUserIds?.[0] || input.assignedTo || null,
+          assigned_to: assignedUserIds?.[0] || assignedTo || null,
           description: JSON.stringify({
             description: input.description || "",
             suitNumber: input.suitNumber || "",
@@ -184,10 +188,10 @@ export function useCases() {
         .single();
 
       if (error) throw error;
-      if (input.assignedUserIds !== undefined) {
-        await syncCaseAccess(data.id, input.assignedUserIds);
-      } else if (input.assignedTo) {
-        await syncCaseAccess(data.id, [input.assignedTo]);
+      if (assignedUserIds !== undefined) {
+        await syncCaseAccess(data.id, assignedUserIds);
+      } else if (assignedTo) {
+        await syncCaseAccess(data.id, [assignedTo]);
       }
       await writeAuditLog({
         action: "CREATE",
@@ -198,7 +202,7 @@ export function useCases() {
       });
       await fetchCases();
     },
-    [fetchCases, syncCaseAccess, user],
+    [fetchCases, profile?.email, role, syncCaseAccess, user],
   );
 
   const updateCase = useCallback(
@@ -209,10 +213,12 @@ export function useCases() {
         throw new Error("You are not authorized to update this case.");
       }
 
-      const nextAssignedUserIds = input.assignedUserIds;
+      const canAssignCases = role === "admin";
+      const nextAssignedUserIds = canAssignCases ? input.assignedUserIds : undefined;
+      const nextAssignedTo = canAssignCases ? input.assignedTo : undefined;
       const primaryAssignedUserId =
         nextAssignedUserIds === undefined
-          ? input.assignedTo
+          ? nextAssignedTo
           : nextAssignedUserIds[0] || "";
 
       const { error } = await supabase
@@ -220,8 +226,8 @@ export function useCases() {
         .update({
           title: input.title,
           assigned_to:
-            nextAssignedUserIds === undefined && input.assignedTo === undefined
-              ? current.assignedTo || null
+            nextAssignedUserIds === undefined && nextAssignedTo === undefined
+              ? current?.assignedTo || null
               : primaryAssignedUserId || null,
           description: JSON.stringify({
             description: input.description || "",
@@ -250,7 +256,7 @@ export function useCases() {
       });
       await fetchCases();
     },
-    [cases, fetchCases, syncCaseAccess, user],
+    [cases, fetchCases, role, syncCaseAccess, user],
   );
 
   const deleteCase = useCallback(

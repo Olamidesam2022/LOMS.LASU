@@ -34,6 +34,11 @@ export default function Login() {
       const { error } = await signIn(email, password);
 
       if (error) {
+        if (error.message.toLowerCase().includes("pending superadmin approval")) {
+          navigate("/awaiting-approval", { state: { email } });
+          return;
+        }
+
         toast({
           title: "Login failed",
           description: error.message,

@@ -61,7 +61,7 @@ export function Dashboard({
               "Cases",
               "Documents",
               "Calendar",
-              ...(role === "superadmin" ? ["Users"] : []),
+              ...(role === "superadmin" || role === "admin" ? ["Users"] : []),
             ].map((item) => (
               <button
                 key={item}
@@ -174,7 +174,7 @@ export function Dashboard({
           </div>
           <div className="grid grid-cols-2 gap-3 p-4">
             {quickLinks
-              .filter((item) => !item.superadminOnly || role === "superadmin")
+              .filter((item) => !item.superadminOnly || role === "superadmin" || role === "admin")
               .map((item) => {
                 const Icon = item.icon;
                 return (
