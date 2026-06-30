@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DocumentType, LegalDocument } from "@/types/legal";
 import { useAuth } from "@/context/AuthContext";
+import { useViewAs } from "@/context/ViewAsContext";
 import { writeAuditLog } from "@/lib/audit";
 
 const DOCUMENT_BUCKET = "case-documents";
@@ -21,6 +22,16 @@ interface DocumentRow {
   status: "Draft" | "Final" | "Archived";
   created_at: string;
   updated_at: string;
+}
+
+interface CaseRow {
+  id: string;
+  assigned_to?: string | null;
+}
+
+interface CaseAccessRow {
+  case_id: string;
+  user_id: string;
 }
 
 const toLegalDocument = (
@@ -47,12 +58,14 @@ const toLegalDocument = (
   status: row.status,
   createdBy: row.created_by || undefined,
   enteredBy: row.entered_by || row.created_by || undefined,
+  canDownload: true,
   canDelete: canManageAll || ownsRecord,
   };
 };
 
 export function useDocuments() {
   const { user, role, profile, isApproved } = useAuth();
+  const { viewingAsUser, isViewingAs } = useViewAs();
   const [documents, setDocuments] = useState<LegalDocument[]>([]);
 
   const fetchDocuments = useCallback(async () => {
@@ -61,18 +74,72 @@ export function useDocuments() {
       return;
     }
 
-    const { data, error } = await supabase
+    const documentsQuery = supabase
       .from("documents")
       .select("id,name,type,case_id,storage_path,mime_type,version,uploaded_by,created_by,entered_by,size,status,created_at,updated_at")
       .order("created_at", { ascending: false });
+    const caseQuery =
+      isViewingAs && viewingAsUser
+        ? supabase.from("cases").select("id,assigned_to")
+        : null;
+    const accessQuery =
+      isViewingAs && viewingAsUser
+        ? supabase.from("case_access").select("case_id,user_id")
+        : null;
+
+    const [documentsResult, caseResult, accessResult] = await Promise.all([
+      documentsQuery,
+      caseQuery ?? Promise.resolve({ data: [], error: null }),
+      accessQuery ?? Promise.resolve({ data: [], error: null }),
+    ]);
+    const { data, error } = documentsResult;
 
     if (error) throw error;
+    if (caseResult.error) console.error("Failed to load document case access:", caseResult.error);
+    if (accessResult.error) console.error("Failed to load document access grants:", accessResult.error);
+
+    const viewer = viewingAsUser
+      ? { id: viewingAsUser.id, role: viewingAsUser.role }
+      : { id: user.id, role };
+    const accessibleCaseIds = new Set<string>();
+
+    if (isViewingAs && viewingAsUser) {
+      ((caseResult.data || []) as CaseRow[]).forEach((caseRow) => {
+        if (
+          viewer.role === "superadmin" ||
+          viewer.role === "admin" ||
+          caseRow.assigned_to === viewer.id
+        ) {
+          accessibleCaseIds.add(caseRow.id);
+        }
+      });
+      ((accessResult.data || []) as CaseAccessRow[]).forEach((accessRow) => {
+        if (accessRow.user_id === viewer.id) {
+          accessibleCaseIds.add(accessRow.case_id);
+        }
+      });
+    }
+
+    const visibleRows = ((data || []) as DocumentRow[]).filter((row) => {
+      if (!isViewingAs || !viewingAsUser) return true;
+      if (viewer.role === "superadmin" || viewer.role === "admin") return true;
+      if (!row.case_id) {
+        return row.created_by === viewer.id || row.entered_by === viewer.id;
+      }
+      return accessibleCaseIds.has(row.case_id);
+    });
+
     setDocuments(
-      ((data || []) as DocumentRow[]).map((row) =>
-        toLegalDocument(row, { id: user.id, role }),
+      visibleRows.map((row) =>
+        isViewingAs
+          ? {
+              ...toLegalDocument(row, viewer),
+              canDelete: false,
+            }
+          : toLegalDocument(row, viewer),
       ),
     );
-  }, [isApproved, role, user]);
+  }, [isApproved, isViewingAs, role, user, viewingAsUser]);
 
   const createDocument = useCallback(
     async (input: {
@@ -160,8 +227,8 @@ export function useDocuments() {
   const downloadDocument = useCallback(
     async (document: LegalDocument) => {
       if (!user) throw new Error("You must be logged in.");
-      if (!document.canDelete) {
-        throw new Error("You are not authorized to delete this document.");
+      if (!document.canDownload) {
+        throw new Error("You are not authorized to download this document.");
       }
       if (!document.storagePath) {
         throw new Error("This document has no stored file attached.");

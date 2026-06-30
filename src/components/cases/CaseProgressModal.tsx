@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { useViewAs } from "@/context/ViewAsContext";
 import { Button } from "@/components/ui/button";
 import { StatusProgressBar } from "@/components/cases/StatusProgressBar";
 import { CaseNote, CaseTask, CaseTaskPriority, CaseTaskStatus } from "@/types/legal";
@@ -102,6 +103,10 @@ interface DocumentRow {
   size: string;
   status: string;
   created_at: string;
+}
+
+interface CaseAccessRow {
+  user_id: string;
 }
 
 interface ModalState {
@@ -246,7 +251,8 @@ function toTask(row: TaskRow, profiles: Map<string, string>): CaseTask {
 
 export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
   const navigate = useNavigate();
-  const { role, user, profile } = useAuth();
+  const { user, profile } = useAuth();
+  const { viewingAsUser, isViewingAs } = useViewAs();
   const [state, setState] = useState<ModalState>(emptyState);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -306,8 +312,21 @@ export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
     const profilesQuery = supabase
       .from("profiles")
       .select("id,full_name,email");
+    const accessQuery = supabase
+      .from("case_access")
+      .select("user_id")
+      .eq("case_id", caseId);
 
-    const [caseResult, notesResult, tasksResult, documentsResult, deadlinesResult, activityResult, profilesResult] =
+    const [
+      caseResult,
+      notesResult,
+      tasksResult,
+      documentsResult,
+      deadlinesResult,
+      activityResult,
+      profilesResult,
+      accessResult,
+    ] =
       await Promise.all([
         caseQuery,
         notesQuery,
@@ -316,10 +335,26 @@ export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
         deadlinesQuery,
         activityQuery,
         profilesQuery,
+        accessQuery,
       ]);
 
     if (caseResult.error) throw caseResult.error;
     const caseRecord = caseResult.data as CaseRow;
+    if (
+      viewingAsUser &&
+      viewingAsUser.role !== "superadmin" &&
+      viewingAsUser.role !== "admin"
+    ) {
+      const accessRows = (accessResult.data || []) as CaseAccessRow[];
+      const canViewedUserAccessCase =
+        caseRecord.assigned_to === viewingAsUser.id ||
+        accessRows.some((access) => access.user_id === viewingAsUser.id);
+
+      if (!canViewedUserAccessCase) {
+        throw new Error("This case is not available to the selected user.");
+      }
+    }
+
     const profileRows = (profilesResult.data || []) as ProfileRow[];
     const profileMap = new Map(
       profileRows.map((profileRow) => [profileRow.id, profileLabel(profileRow)]),
@@ -346,7 +381,7 @@ export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
       profiles: profileRows,
       documents: (documentsResult.data || []) as DocumentRow[],
     });
-  }, [caseId, profile?.email, profile?.full_name, user]);
+  }, [caseId, profile?.email, profile?.full_name, user, viewingAsUser]);
 
   useEffect(() => {
     let isMounted = true;
@@ -457,11 +492,8 @@ export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
   const caseRecord = state.caseRecord;
   const caseNumber = state.meta.suitNumber || `Case ${caseId.slice(0, 8)}`;
   const caseTitle = caseRecord?.title || "Untitled case";
-  const normalizedStatus = (state.meta.status || "").toLowerCase().replace(/\s+/g, "_");
-  const canEdit =
-    role === "superadmin" ||
-    role === "admin" ||
-    normalizedStatus === "in_progress";
+  const isReadOnly = isViewingAs;
+  const canEdit = Boolean(user && caseRecord && !isReadOnly);
   const todayInputValue = getTodayInputValue();
   const openTaskCount = state.tasks.filter((task) => task.status !== "completed").length;
   const completedTaskCount = state.tasks.filter((task) => task.status === "completed").length;
@@ -517,6 +549,7 @@ export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
   };
 
   const handleAddNote = async () => {
+    if (isReadOnly) return;
     if (!user || !noteContent.trim()) return;
     setIsSavingNote(true);
     try {
@@ -545,6 +578,7 @@ export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
   };
 
   const handleAddTask = async () => {
+    if (isReadOnly) return;
     if (!user || !taskInput.title.trim()) return;
     setIsSavingTask(true);
     try {
@@ -580,6 +614,7 @@ export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
   };
 
   const handleTaskStatusChange = async (task: CaseTask, status: CaseTaskStatus) => {
+    if (isReadOnly) return;
     if (!user) return;
     const { error: taskError } = await supabase
       .from("case_tasks")
@@ -601,6 +636,7 @@ export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
   };
 
   const handleSaveSittingDate = async () => {
+    if (isReadOnly) return;
     if (!user || !caseRecord || !sittingDate) return;
     if (sittingDate < todayInputValue) {
       setError("Choose today or a future sitting date.");
@@ -878,27 +914,29 @@ export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
                   <div className="border-b border-border p-4">
                     <h3 className="font-semibold text-foreground">Case Notes</h3>
                   </div>
-                  <div className="space-y-3 p-4">
-                    <textarea
-                      value={noteContent}
-                      onChange={(event) => setNoteContent(event.target.value)}
-                      rows={3}
-                      placeholder="Add an internal case note..."
-                      className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary"
-                    />
-                    <Button
-                      onClick={handleAddNote}
-                      disabled={isSavingNote || !noteContent.trim()}
-                      className="gap-2"
-                    >
-                      {isSavingNote ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Send className="h-4 w-4" />
-                      )}
-                      Add Note
-                    </Button>
-                  </div>
+                  {!isReadOnly && (
+                    <div className="space-y-3 p-4">
+                      <textarea
+                        value={noteContent}
+                        onChange={(event) => setNoteContent(event.target.value)}
+                        rows={3}
+                        placeholder="Add an internal case note..."
+                        className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary"
+                      />
+                      <Button
+                        onClick={handleAddNote}
+                        disabled={isSavingNote || !noteContent.trim()}
+                        className="gap-2"
+                      >
+                        {isSavingNote ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Send className="h-4 w-4" />
+                        )}
+                        Add Note
+                      </Button>
+                    </div>
+                  )}
                   <div className="divide-y divide-border">
                     {state.notes.length === 0 && (
                       <p className="p-4 text-sm text-muted-foreground">
@@ -935,77 +973,79 @@ export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
                       {completedTaskCount} of {state.tasks.length} tasks complete
                     </p>
                   </div>
-                  <div className="grid gap-3 p-4 md:grid-cols-2">
-                    <input
-                      value={taskInput.title}
-                      onChange={(event) =>
-                        setTaskInput((current) => ({ ...current, title: event.target.value }))
-                      }
-                      placeholder="Task title"
-                      className="rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary"
-                    />
-                    <select
-                      value={taskInput.assignedTo}
-                      onChange={(event) =>
-                        setTaskInput((current) => ({ ...current, assignedTo: event.target.value }))
-                      }
-                      className="rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary"
-                    >
-                      <option value="">Assign to me</option>
-                      {assigneeOptions.map((option) => (
-                        <option key={option.id} value={option.id}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      type="date"
-                      value={taskInput.dueDate}
-                      onChange={(event) =>
-                        setTaskInput((current) => ({ ...current, dueDate: event.target.value }))
-                      }
-                      className="rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary"
-                    />
-                    <select
-                      value={taskInput.priority}
-                      onChange={(event) =>
-                        setTaskInput((current) => ({
-                          ...current,
-                          priority: event.target.value as CaseTaskPriority,
-                        }))
-                      }
-                      className="rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary"
-                    >
-                      <option value="low">Low priority</option>
-                      <option value="normal">Normal priority</option>
-                      <option value="high">High priority</option>
-                      <option value="urgent">Urgent priority</option>
-                    </select>
-                    <textarea
-                      value={taskInput.description}
-                      onChange={(event) =>
-                        setTaskInput((current) => ({
-                          ...current,
-                          description: event.target.value,
-                        }))
-                      }
-                      rows={3}
-                      placeholder="Task details"
-                      className="rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary md:col-span-2"
-                    />
-                    <Button
-                      onClick={handleAddTask}
-                      disabled={isSavingTask || !taskInput.title.trim()}
-                      className="gap-2 md:w-fit"
-                    >
-                      {isSavingTask ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Plus className="h-4 w-4" />
-                      )}
-                      Assign Task
-                    </Button>
-                  </div>
+                  {!isReadOnly && (
+                    <div className="grid gap-3 p-4 md:grid-cols-2">
+                      <input
+                        value={taskInput.title}
+                        onChange={(event) =>
+                          setTaskInput((current) => ({ ...current, title: event.target.value }))
+                        }
+                        placeholder="Task title"
+                        className="rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary"
+                      />
+                      <select
+                        value={taskInput.assignedTo}
+                        onChange={(event) =>
+                          setTaskInput((current) => ({ ...current, assignedTo: event.target.value }))
+                        }
+                        className="rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary"
+                      >
+                        <option value="">Assign to me</option>
+                        {assigneeOptions.map((option) => (
+                          <option key={option.id} value={option.id}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="date"
+                        value={taskInput.dueDate}
+                        onChange={(event) =>
+                          setTaskInput((current) => ({ ...current, dueDate: event.target.value }))
+                        }
+                        className="rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary"
+                      />
+                      <select
+                        value={taskInput.priority}
+                        onChange={(event) =>
+                          setTaskInput((current) => ({
+                            ...current,
+                            priority: event.target.value as CaseTaskPriority,
+                          }))
+                        }
+                        className="rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary"
+                      >
+                        <option value="low">Low priority</option>
+                        <option value="normal">Normal priority</option>
+                        <option value="high">High priority</option>
+                        <option value="urgent">Urgent priority</option>
+                      </select>
+                      <textarea
+                        value={taskInput.description}
+                        onChange={(event) =>
+                          setTaskInput((current) => ({
+                            ...current,
+                            description: event.target.value,
+                          }))
+                        }
+                        rows={3}
+                        placeholder="Task details"
+                        className="rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary md:col-span-2"
+                      />
+                      <Button
+                        onClick={handleAddTask}
+                        disabled={isSavingTask || !taskInput.title.trim()}
+                        className="gap-2 md:w-fit"
+                      >
+                        {isSavingTask ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Plus className="h-4 w-4" />
+                        )}
+                        Assign Task
+                      </Button>
+                    </div>
+                  )}
                   <div className="divide-y divide-border">
                     {activeTasks.length === 0 && (
                       <p className="p-4 text-sm text-muted-foreground">
@@ -1034,35 +1074,38 @@ export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
                             )}
                           </p>
                         </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleTaskStatusChange(task, "completed")}
-                            className="gap-2"
-                          >
-                            <Circle className="h-4 w-4" />
-                            Mark Done
-                          </Button>
-                          {task.createdBy === user?.id && (
+                        {!isReadOnly && (
+                          <div className="flex gap-2">
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={async () => {
-                                const { error: deleteError } = await supabase
-                                  .from("case_tasks")
-                                  .delete()
-                                  .eq("id", task.id);
-                                if (deleteError) throw deleteError;
-                                await fetchCaseProgress();
-                              }}
-                              className="gap-2 text-destructive hover:text-destructive"
+                              onClick={() => handleTaskStatusChange(task, "completed")}
+                              className="gap-2"
                             >
-                              <Trash2 className="h-4 w-4" />
-                              Delete
+                              <Circle className="h-4 w-4" />
+                              Mark Done
                             </Button>
-                          )}
-                        </div>
+                            {task.createdBy === user?.id && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={async () => {
+                                  if (isReadOnly) return;
+                                  const { error: deleteError } = await supabase
+                                    .from("case_tasks")
+                                    .delete()
+                                    .eq("id", task.id);
+                                  if (deleteError) throw deleteError;
+                                  await fetchCaseProgress();
+                                }}
+                                className="gap-2 text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                Delete
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1085,15 +1128,17 @@ export function CaseProgressModal({ caseId, onClose }: CaseProgressModalProps) {
                                 Completed {relativeTime(task.completedAt?.toISOString())}
                               </p>
                             </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleTaskStatusChange(task, "open")}
-                              className="gap-2"
-                            >
-                              <CheckCircle2 className="h-4 w-4" />
-                              Reopen
-                            </Button>
+                            {!isReadOnly && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleTaskStatusChange(task, "open")}
+                                className="gap-2"
+                              >
+                                <CheckCircle2 className="h-4 w-4" />
+                                Reopen
+                              </Button>
+                            )}
                           </div>
                         ))}
                       </div>

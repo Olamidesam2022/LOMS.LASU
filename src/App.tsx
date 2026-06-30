@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ViewAsProvider } from "@/contexts/ViewAsContext";
 import { CaseProgressModalProvider } from "@/hooks/useCaseProgressModal";
 import Index from "./pages/Index";
 import Landing from "./pages/Landing";
@@ -106,9 +107,11 @@ const App = () => (
         <Toaster />
         <BrowserRouter>
           <AuthProvider>
-            <CaseProgressModalProvider>
-              <AppRoutes />
-            </CaseProgressModalProvider>
+            <ViewAsProvider>
+              <CaseProgressModalProvider>
+                <AppRoutes />
+              </CaseProgressModalProvider>
+            </ViewAsProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdvisoryRequest, AdvisoryStatus } from "@/types/legal";
 import { useAuth } from "@/context/AuthContext";
+import { useViewAs } from "@/context/ViewAsContext";
 import { writeAuditLog } from "@/lib/audit";
 
 export interface AdvisoryInput {
@@ -23,6 +24,7 @@ interface AdvisoryRow {
   due_date: string | null;
   status: AdvisoryStatus;
   assigned_to: string | null;
+  created_by?: string | null;
   priority: "Low" | "Medium" | "High" | "Critical";
   description: string | null;
   created_at: string;
@@ -44,6 +46,7 @@ const toAdvisoryRequest = (row: AdvisoryRow): AdvisoryRequest => ({
 
 export function useAdvisoryRequests() {
   const { user, isApproved } = useAuth();
+  const { viewingAsUser, isViewingAs } = useViewAs();
   const [advisoryRequests, setAdvisoryRequests] = useState<AdvisoryRequest[]>([]);
 
   const fetchAdvisoryRequests = useCallback(async () => {
@@ -54,12 +57,37 @@ export function useAdvisoryRequests() {
 
     const { data, error } = await supabase
       .from("advisory_requests")
-      .select("id,title,requested_by,department,due_date,status,assigned_to,priority,description,created_at")
+      .select("id,title,requested_by,department,due_date,status,assigned_to,created_by,priority,description,created_at")
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    setAdvisoryRequests(((data || []) as AdvisoryRow[]).map(toAdvisoryRequest));
-  }, [isApproved, user]);
+    const rows = (data || []) as AdvisoryRow[];
+    const visibleRows =
+      isViewingAs && viewingAsUser
+        ? rows.filter((row) => {
+            if (viewingAsUser.role === "superadmin" || viewingAsUser.role === "admin") {
+              return true;
+            }
+
+            const targetValues = [
+              viewingAsUser.id,
+              viewingAsUser.email,
+              viewingAsUser.name,
+            ].map((value) => value.toLowerCase());
+            const rowValues = [
+              row.created_by || "",
+              row.assigned_to || "",
+              row.requested_by || "",
+            ].map((value) => value.toLowerCase());
+
+            return targetValues.some((target) =>
+              rowValues.some((value) => value === target || value.includes(target)),
+            );
+          })
+        : rows;
+
+    setAdvisoryRequests(visibleRows.map(toAdvisoryRequest));
+  }, [isApproved, isViewingAs, user, viewingAsUser]);
 
   const createAdvisoryRequest = useCallback(
     async (input: AdvisoryInput) => {

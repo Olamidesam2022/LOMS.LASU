@@ -44,8 +44,6 @@ export function useProfiles() {
 
     if (role === "admin") {
       query = query.eq("status", "approved");
-    } else {
-      query = query.neq("status", "rejected");
     }
 
     const { data, error } = await query;

@@ -73,6 +73,7 @@ export interface LegalDocument {
   status: "Draft" | "Final" | "Archived";
   createdBy?: string;
   enteredBy?: string;
+  canDownload?: boolean;
   canDelete?: boolean;
 }
 

@@ -7,6 +7,7 @@ import {
   User as LegacyUser,
 } from "@/types/legal";
 import { useAuth } from "@/contexts/AuthContext";
+import { useViewAs } from "@/contexts/ViewAsContext";
 import { useCases } from "@/hooks/useCases";
 import { useProfiles } from "@/hooks/useProfiles";
 import { useAdvisoryRequests } from "@/hooks/useAdvisoryRequests";
@@ -48,7 +49,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useSwipeGesture } from "@/hooks/use-swipe-gesture";
-import { Loader2, Shield } from "lucide-react";
+import { Loader2, Shield, X } from "lucide-react";
 import { useCaseProgressModal } from "@/hooks/useCaseProgressModal";
 
 const viewTitles: Record<string, string> = {
@@ -75,6 +76,7 @@ type ConfirmDialogState = {
 
 const Index = () => {
   const { user, profile, role, isLoading, signOut } = useAuth();
+  const { viewingAsUser, isViewingAs, startViewingAs, stopViewingAs } = useViewAs();
   const location = useLocation();
   const navigate = useNavigate();
   const { openModal } = useCaseProgressModal();
@@ -161,10 +163,19 @@ const Index = () => {
 
     const caseItem = cases.find((item) => item.id === match[1]);
     if (caseItem) {
+      if (isViewingAs || !caseItem.canEdit) {
+        toast.error(
+          isViewingAs
+            ? "View-as mode is read-only."
+            : "You can only edit cases assigned to you.",
+        );
+        navigate("/app/cases", { replace: true });
+        return;
+      }
       setSelectedCase(caseItem);
       setAddCaseOpen(true);
     }
-  }, [cases, location.pathname]);
+  }, [cases, isViewingAs, location.pathname, navigate]);
 
   // Swipe gestures for mobile sidebar
   useSwipeGesture(mainContentRef, {
@@ -186,6 +197,12 @@ const Index = () => {
   };
 
   const handleViewChange = (viewId: string) => {
+    if (isViewingAs && ["audit", "users"].includes(viewId)) {
+      toast.info("Exit view-as mode to use administrator workspaces.");
+      navigate("/app", { replace: true });
+      return;
+    }
+
     if (viewId === "users" && role !== "superadmin" && role !== "admin") {
       toast.error("Only admin and superadmin accounts can access user management.");
       navigate("/app", { replace: true });
@@ -210,11 +227,26 @@ const Index = () => {
   };
 
   const handleEditCase = (caseItem: LitigationCase) => {
+    if (isViewingAs) {
+      toast.info("View-as mode is read-only.");
+      return;
+    }
+
+    if (!caseItem.canEdit) {
+      toast.error("You can only edit cases assigned to you.");
+      return;
+    }
+
     setSelectedCase(caseItem);
     setAddCaseOpen(true);
   };
 
   const handleDeleteCase = async (caseItem: LitigationCase) => {
+    if (isViewingAs) {
+      toast.info("View-as mode is read-only.");
+      return;
+    }
+
     setConfirmDialog({
       title: "Delete case?",
       description: `This will permanently delete "${caseItem.caseTitle}". This action cannot be undone.`,
@@ -238,17 +270,32 @@ const Index = () => {
   };
 
   const handleAddAdvisory = () => {
+    if (isViewingAs) {
+      toast.info("View-as mode is read-only.");
+      return;
+    }
+
     setSelectedAdvisory(null);
     setAddAdvisoryOpen(true);
   };
 
   const handleEditAdvisory = (request: AdvisoryRequest) => {
+    if (isViewingAs) {
+      toast.info("View-as mode is read-only.");
+      return;
+    }
+
     setSelectedAdvisory(request);
     setViewAdvisoryOpen(false);
     setAddAdvisoryOpen(true);
   };
 
   const handleDeleteAdvisory = async (request: AdvisoryRequest) => {
+    if (isViewingAs) {
+      toast.info("View-as mode is read-only.");
+      return;
+    }
+
     setConfirmDialog({
       title: "Delete advisory request?",
       description: `This will permanently delete "${request.title}". This action cannot be undone.`,
@@ -285,6 +332,11 @@ const Index = () => {
   };
 
   const handleDeleteDocument = async (doc: LegalDocument) => {
+    if (isViewingAs) {
+      toast.info("View-as mode is read-only.");
+      return;
+    }
+
     setConfirmDialog({
       title: "Delete document?",
       description: `This will delete "${doc.name}" from the document vault and record a system note if it is linked to a case.`,
@@ -321,6 +373,11 @@ const Index = () => {
   };
 
   const handleEditUser = async (legacyUser: LegacyUser) => {
+    if (isViewingAs) {
+      toast.info("Exit view-as mode before managing users.");
+      return;
+    }
+
     if (role !== "superadmin") {
       toast.error("Only superadmin can edit users.");
       return;
@@ -346,6 +403,11 @@ const Index = () => {
   };
 
   const handleDeleteUser = async (legacyUser: LegacyUser) => {
+    if (isViewingAs) {
+      toast.info("Exit view-as mode before managing users.");
+      return;
+    }
+
     if (legacyUser.id === user?.id) {
       toast.error("You cannot delete your own account.");
       return;
@@ -380,34 +442,38 @@ const Index = () => {
     }
   };
 
-  // Show loading state
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary shadow-lg">
-            <Shield className="h-9 w-9 text-primary-foreground animate-pulse" />
-          </div>
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  const handleViewAsUser = async (legacyUser: LegacyUser) => {
+    if (role !== "superadmin") {
+      toast.error("Only superadmin can view as another user.");
+      return;
+    }
 
-  // Redirect to login if not authenticated
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // Create a compatible user object for components that expect the legacy User type
-  const currentUser: LegacyUser = {
-    id: user.id,
-    name: profile?.full_name || user.email || "User",
-    email: profile?.email || user.email || "",
-    role: role || "staff",
-    department: "Legal",
+    try {
+      await startViewingAs(legacyUser);
+      setAddCaseOpen(false);
+      setAddAdvisoryOpen(false);
+      setUploadDocumentOpen(false);
+      setEditUserOpen(false);
+      setSelectedCase(null);
+      setSelectedAdvisory(null);
+      setSelectedDocument(null);
+      handleViewChange("dashboard");
+      toast.success(`Viewing as ${legacyUser.name}`);
+    } catch (error: any) {
+      toast.error("Could not start view-as mode", {
+        description: error.message || "Please try again.",
+      });
+    }
   };
 
+  const handleExitViewAs = async () => {
+    const previousName = viewingAsUser?.name || "user";
+    await stopViewingAs();
+    toast.success(`Stopped viewing as ${previousName}`);
+  };
+
+  const canManageCases =
+    !isViewingAs && (role === "superadmin" || role === "admin");
   const displayCases = cases;
   const activeCases = useMemo(
     () =>
@@ -464,6 +530,35 @@ const Index = () => {
     return [...caseResults, ...documentResults].slice(0, 6);
   }, [displayCases, documents, globalSearchQuery]);
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary shadow-lg">
+            <Shield className="h-9 w-9 text-primary-foreground animate-pulse" />
+          </div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect to login if not authenticated
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Create a compatible user object for components that expect the legacy User type
+  const currentUser: LegacyUser = {
+    id: user.id,
+    name: profile?.full_name || user.email || "User",
+    email: profile?.email || user.email || "",
+    role: role || "staff",
+    department: "Legal",
+  };
+  const workspaceUser = viewingAsUser || currentUser;
+
   const handleSearchResultSelect = (result: HeaderSearchResult) => {
     if (result.type === "case") {
       const caseItem = displayCases.find((item) => item.id === result.id);
@@ -500,20 +595,27 @@ const Index = () => {
         return (
           <LitigationRegistry
             cases={activeCases}
-            onAddCase={() => setAddCaseOpen(true)}
+            onAddCase={
+              canManageCases
+                ? () => {
+                    setSelectedCase(null);
+                    setAddCaseOpen(true);
+                  }
+                : undefined
+            }
             onViewCase={handleViewCase}
-            onEditCase={handleEditCase}
-            onDeleteCase={handleDeleteCase}
+            onEditCase={isViewingAs ? undefined : handleEditCase}
+            onDeleteCase={isViewingAs ? undefined : handleDeleteCase}
           />
         );
       case "advisory":
         return (
           <AdvisoryWorkflow
             requests={advisoryRequests}
-            onAddRequest={handleAddAdvisory}
+            onAddRequest={isViewingAs ? undefined : handleAddAdvisory}
             onViewRequest={handleViewAdvisory}
-            onEditRequest={handleEditAdvisory}
-            onDeleteRequest={handleDeleteAdvisory}
+            onEditRequest={isViewingAs ? undefined : handleEditAdvisory}
+            onDeleteRequest={isViewingAs ? undefined : handleDeleteAdvisory}
           />
         );
       case "documents":
@@ -521,10 +623,10 @@ const Index = () => {
           <DocumentVault
             documents={documents}
             cases={displayCases}
-            onUpload={() => setUploadDocumentOpen(true)}
+            onUpload={isViewingAs ? undefined : () => setUploadDocumentOpen(true)}
             onViewDocument={handleViewDocument}
             onDownloadDocument={handleDownloadDocument}
-            onDeleteDocument={handleDeleteDocument}
+            onDeleteDocument={isViewingAs ? undefined : handleDeleteDocument}
           />
         );
       case "progress":
@@ -548,14 +650,26 @@ const Index = () => {
           />
         );
       case "audit":
+        if (isViewingAs) {
+          return (
+            <div className="flex min-h-[22rem] flex-col items-center justify-center p-6 text-center">
+              <h2 className="modern-page-title">Read-only workspace</h2>
+              <p className="mt-2 text-sm font-medium text-muted-foreground">
+                Exit view-as mode to use the audit trail.
+              </p>
+            </div>
+          );
+        }
         return <AuditTrail logs={auditLogs} />;
       case "users":
-        if (role !== "superadmin" && role !== "admin") {
+        if (isViewingAs || (role !== "superadmin" && role !== "admin")) {
           return (
             <div className="flex min-h-[22rem] flex-col items-center justify-center p-6 text-center">
               <h2 className="modern-page-title">Unauthorized</h2>
               <p className="mt-2 text-sm font-medium text-muted-foreground">
-                Only admin and superadmin accounts can access user management.
+                {isViewingAs
+                  ? "Exit view-as mode to manage users."
+                  : "Only admin and superadmin accounts can access user management."}
               </p>
             </div>
           );
@@ -567,10 +681,12 @@ const Index = () => {
             onAddUser={role === "superadmin" ? () => setAddUserOpen(true) : undefined}
             onEditUser={role === "superadmin" ? handleEditUser : undefined}
             onDeleteUser={role === "superadmin" ? handleDeleteUser : undefined}
+            onViewAsUser={role === "superadmin" ? handleViewAsUser : undefined}
+            viewingAsUserId={viewingAsUser?.id}
           />
         );
       case "settings":
-        return <Settings currentUser={currentUser} />;
+        return <Settings currentUser={workspaceUser} />;
       case "calendar":
         return <CalendarView cases={activeCases} onViewCase={handleViewCase} />;
       default:
@@ -592,7 +708,7 @@ const Index = () => {
     >
       {/* Sidebar */}
       <Sidebar
-        currentUser={currentUser}
+        currentUser={workspaceUser}
         activeView={activeView}
         onViewChange={handleViewChange}
         onLogout={handleLogout}
@@ -609,7 +725,7 @@ const Index = () => {
         )}
       >
         <Header
-          currentUser={currentUser}
+          currentUser={workspaceUser}
           title={viewTitles[activeView] || "Dashboard"}
           onMenuToggle={() => setSidebarOpen(true)}
           onAccountClick={() => handleViewChange("settings")}
@@ -619,6 +735,28 @@ const Index = () => {
           onSearchResultSelect={handleSearchResultSelect}
           onPendingApprovalsClick={() => handleViewChange("users")}
         />
+        {isViewingAs && viewingAsUser && (
+          <div className="border-b border-border bg-foreground px-3 py-2 text-background sm:px-4 md:px-6">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-sm font-extrabold">
+                  Viewing as {viewingAsUser.name}
+                </p>
+                <p className="text-xs font-medium text-background/75">
+                  Read-only workspace preview. Actions are still audited under your superadmin account.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleExitViewAs}
+                className="inline-flex min-h-9 w-fit items-center justify-center gap-2 rounded-lg border border-background/25 px-3 py-1.5 text-sm font-bold transition-colors hover:bg-background hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+                Exit view
+              </button>
+            </div>
+          </div>
+        )}
         <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background">
           {isPageLoading ? (
             <div className="flex min-h-[calc(100vh-8rem)] animate-fade-in items-center justify-center p-6">
@@ -651,7 +789,7 @@ const Index = () => {
         }}
         caseItem={selectedCase}
         users={dbUsers}
-        canAssignCase={role === "admin"}
+        canAssignCase={canManageCases}
         onCreateCase={(input) =>
           selectedCase ? updateCase(selectedCase.id, input) : createCase(input)
         }

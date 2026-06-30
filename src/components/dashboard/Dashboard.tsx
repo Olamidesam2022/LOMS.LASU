@@ -2,6 +2,7 @@ import { CalendarDays, FileText, Scale, Users } from "lucide-react";
 import { RecentActivity } from "./RecentActivity";
 import { LitigationCase, AuditLog, DashboardMetrics } from "@/types/legal";
 import { useAuth } from "@/contexts/AuthContext";
+import { useViewAs } from "@/contexts/ViewAsContext";
 import { usePendingApprovals } from "@/hooks/usePendingApprovals";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -32,6 +33,8 @@ export function Dashboard({
   onNavigate,
 }: DashboardProps) {
   const { role } = useAuth();
+  const { viewingAsUser, isViewingAs } = useViewAs();
+  const effectiveRole = viewingAsUser?.role || role;
   const {
     pendingUsers,
     updatePendingUser,
@@ -39,7 +42,8 @@ export function Dashboard({
     isLoading,
     error,
   } = usePendingApprovals();
-  const canViewAudit = role === "superadmin" || role === "admin";
+  const canViewAudit =
+    !isViewingAs && (role === "superadmin" || role === "admin");
   const upcomingCases = cases
     .filter((c) => c.nextHearing > new Date())
     .sort((a, b) => a.nextHearing.getTime() - b.nextHearing.getTime())
@@ -61,7 +65,9 @@ export function Dashboard({
               "Cases",
               "Documents",
               "Calendar",
-              ...(role === "superadmin" || role === "admin" ? ["Users"] : []),
+              ...(!isViewingAs && (role === "superadmin" || role === "admin")
+                ? ["Users"]
+                : []),
             ].map((item) => (
               <button
                 key={item}
@@ -174,7 +180,13 @@ export function Dashboard({
           </div>
           <div className="grid grid-cols-2 gap-3 p-4">
             {quickLinks
-              .filter((item) => !item.superadminOnly || role === "superadmin" || role === "admin")
+              .filter(
+                (item) =>
+                  !item.superadminOnly ||
+                  (!isViewingAs &&
+                    (role === "superadmin" || role === "admin") &&
+                    (effectiveRole === "superadmin" || effectiveRole === "admin")),
+              )
               .map((item) => {
                 const Icon = item.icon;
                 return (
@@ -262,7 +274,7 @@ export function Dashboard({
         onViewAll={canViewAudit ? () => onNavigate?.("audit") : undefined}
       />
 
-      {role === "superadmin" && (
+      {role === "superadmin" && !isViewingAs && (
         <div className="dashboard-panel p-4 sm:p-5">
           <div className="mb-3 flex items-center justify-between gap-3">
             <h3 className="font-black text-foreground">

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AuditLog } from "@/types/legal";
 import { useAuth } from "@/context/AuthContext";
+import { useViewAs } from "@/context/ViewAsContext";
 
 interface AuditLogRow {
   id: string;
@@ -27,6 +28,7 @@ const toAuditLog = (row: AuditLogRow): AuditLog => ({
 
 export function useAuditLogs() {
   const { role, isApproved } = useAuth();
+  const { viewingAsUser, isViewingAs } = useViewAs();
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
 
   const fetchAuditLogs = useCallback(async () => {
@@ -41,8 +43,14 @@ export function useAuditLogs() {
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    setAuditLogs(((data || []) as AuditLogRow[]).map(toAuditLog));
-  }, [isApproved, role]);
+    const rows = (data || []) as AuditLogRow[];
+    const visibleRows =
+      isViewingAs && viewingAsUser
+        ? rows.filter((row) => row.performed_by === viewingAsUser.id)
+        : rows;
+
+    setAuditLogs(visibleRows.map(toAuditLog));
+  }, [isApproved, isViewingAs, role, viewingAsUser]);
 
   useEffect(() => {
     fetchAuditLogs().catch(console.error);

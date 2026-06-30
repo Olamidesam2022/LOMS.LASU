@@ -8,6 +8,7 @@ import {
   Building2,
   MoreHorizontal,
   Edit,
+  Eye,
   Trash2,
   Key
 } from 'lucide-react';
@@ -21,6 +22,8 @@ interface UserManagementProps {
   onAddUser?: () => void;
   onEditUser?: (user: User) => void;
   onDeleteUser?: (user: User) => void;
+  onViewAsUser?: (user: User) => void;
+  viewingAsUserId?: string | null;
 }
 
 const roleStyles: Record<UserRole, { label: string; color: string }> = {
@@ -29,12 +32,20 @@ const roleStyles: Record<UserRole, { label: string; color: string }> = {
   staff: { label: 'Staff', color: 'bg-info/10 text-info' },
 };
 
-export function UserManagement({ users, currentUser, onAddUser, onEditUser, onDeleteUser }: UserManagementProps) {
+export function UserManagement({
+  users,
+  currentUser,
+  onAddUser,
+  onEditUser,
+  onDeleteUser,
+  onViewAsUser,
+  viewingAsUserId,
+}: UserManagementProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
   const [page, setPage] = useState(1);
   const pageSize = 10;
-  const canManageUsers = Boolean(onEditUser || onDeleteUser);
+  const canManageUsers = Boolean(onEditUser || onDeleteUser || onViewAsUser);
   const availableRoleFilters: Array<UserRole | 'all'> =
     currentUser.role === 'admin'
       ? ['all', 'staff']
@@ -214,6 +225,21 @@ export function UserManagement({ users, currentUser, onAddUser, onEditUser, onDe
                         <MoreHorizontal className="h-4 w-4" />
                       </button>
                     </>
+                  )}
+                  {onViewAsUser && (
+                    <button
+                      onClick={() => onViewAsUser(user)}
+                      className={cn(
+                        "icon-button",
+                        viewingAsUserId === user.id && "bg-primary text-primary-foreground",
+                        isCurrentUser && "cursor-not-allowed text-muted-foreground/50",
+                      )}
+                      disabled={isCurrentUser}
+                      title={viewingAsUserId === user.id ? "Currently viewing" : "View as user"}
+                      aria-label={`View as ${user.name}`}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
                   )}
                   {onDeleteUser && (
                     <button

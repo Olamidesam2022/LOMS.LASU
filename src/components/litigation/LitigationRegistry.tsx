@@ -57,13 +57,15 @@ export function LitigationRegistry({ cases, onAddCase, onViewCase, onEditCase, o
             {filteredCases.length} case{filteredCases.length !== 1 ? 's' : ''} found
           </p>
         </div>
-        <button 
-          onClick={onAddCase}
-          className="gold-button flex items-center gap-2 rounded-lg px-4 py-2.5"
-        >
-          <Plus className="h-4 w-4" />
-          <span>New Case</span>
-        </button>
+        {onAddCase && (
+          <button
+            onClick={onAddCase}
+            className="gold-button flex items-center gap-2 rounded-lg px-4 py-2.5"
+          >
+            <Plus className="h-4 w-4" />
+            <span>New Case</span>
+          </button>
+        )}
       </div>
 
       {/* Search and Filters */}
@@ -183,12 +185,12 @@ export function LitigationRegistry({ cases, onAddCase, onViewCase, onEditCase, o
               <button onClick={() => onViewCase?.(caseItem)} className="icon-button" title="View">
                 <Eye className="h-4 w-4" />
               </button>
-              {caseItem.canEdit && (
+              {caseItem.canEdit && onEditCase && (
                 <button onClick={() => onEditCase?.(caseItem)} className="icon-button" title="Edit">
                   <Edit className="h-4 w-4" />
                 </button>
               )}
-              {caseItem.canDelete && (
+              {caseItem.canDelete && onDeleteCase && (
                 <button onClick={() => onDeleteCase?.(caseItem)} className="icon-button hover:bg-destructive/10 hover:text-destructive" title="Delete">
                   <Trash2 className="h-4 w-4" />
                 </button>

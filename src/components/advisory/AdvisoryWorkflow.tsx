@@ -81,13 +81,15 @@ export function AdvisoryWorkflow({
             Track legal advice requests from VC Office and Registry
           </p>
         </div>
-        <button 
-          onClick={onAddRequest}
-          className="gold-button flex items-center justify-center gap-2 rounded-lg px-4 py-2 sm:py-2.5 text-sm"
-        >
-          <Plus className="h-4 w-4" />
-          <span>New Request</span>
-        </button>
+        {onAddRequest && (
+          <button
+            onClick={onAddRequest}
+            className="gold-button flex items-center justify-center gap-2 rounded-lg px-4 py-2 sm:py-2.5 text-sm"
+          >
+            <Plus className="h-4 w-4" />
+            <span>New Request</span>
+          </button>
+        )}
       </div>
 
       {/* Search and Filters */}
@@ -201,24 +203,30 @@ export function AdvisoryWorkflow({
                         )}
                       </button>
 
-                      <div className="mt-3 flex items-center justify-end gap-2 border-t border-border/60 pt-2">
-                        <button
-                          type="button"
-                          onClick={() => onEditRequest?.(request)}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                          aria-label={`Edit ${request.title}`}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onDeleteRequest?.(request)}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                          aria-label={`Delete ${request.title}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
+                      {(onEditRequest || onDeleteRequest) && (
+                        <div className="mt-3 flex items-center justify-end gap-2 border-t border-border/60 pt-2">
+                          {onEditRequest && (
+                            <button
+                              type="button"
+                              onClick={() => onEditRequest(request)}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                              aria-label={`Edit ${request.title}`}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                          )}
+                          {onDeleteRequest && (
+                            <button
+                              type="button"
+                              onClick={() => onDeleteRequest(request)}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                              aria-label={`Delete ${request.title}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}

@@ -89,13 +89,15 @@ export function DocumentVault({ documents, cases = [], onUpload, onViewDocument,
             Secure digital archive with version control
           </p>
         </div>
-        <button 
-          onClick={onUpload}
-          className="gold-button flex items-center gap-2 rounded-lg px-4 py-2.5"
-        >
-          <Upload className="h-4 w-4" />
-          <span>Upload Document</span>
-        </button>
+        {onUpload && (
+          <button
+            onClick={onUpload}
+            className="gold-button flex items-center gap-2 rounded-lg px-4 py-2.5"
+          >
+            <Upload className="h-4 w-4" />
+            <span>Upload Document</span>
+          </button>
+        )}
       </div>
 
       {/* Search and Filters */}
@@ -267,7 +269,7 @@ export function DocumentVault({ documents, cases = [], onUpload, onViewDocument,
                   >
                     <Download className="h-4 w-4" />
                   </button>
-                  {doc.canDelete && (
+                  {doc.canDelete && onDeleteDocument && (
                     <button
                       onClick={() => onDeleteDocument?.(doc)}
                       className="icon-button bg-background shadow-sm hover:bg-destructive/10 hover:text-destructive"
@@ -338,7 +340,7 @@ export function DocumentVault({ documents, cases = [], onUpload, onViewDocument,
                   <button onClick={() => onDownloadDocument?.(doc)} className="icon-button" aria-label={`Download ${doc.name}`}>
                     <Download className="h-4 w-4" />
                   </button>
-                  {doc.canDelete && (
+                  {doc.canDelete && onDeleteDocument && (
                     <button
                       onClick={() => onDeleteDocument?.(doc)}
                       className="icon-button hover:bg-destructive/10 hover:text-destructive"
@@ -370,13 +372,15 @@ export function DocumentVault({ documents, cases = [], onUpload, onViewDocument,
           <p className="mb-4 text-muted-foreground">
             Try adjusting your search or filter criteria
           </p>
-          <button 
-            onClick={onUpload}
-            className="gold-button flex items-center gap-2 rounded-lg px-4 py-2"
-          >
-            <Upload className="h-4 w-4" />
-            <span>Upload Document</span>
-          </button>
+          {onUpload && (
+            <button
+              onClick={onUpload}
+              className="gold-button flex items-center gap-2 rounded-lg px-4 py-2"
+            >
+              <Upload className="h-4 w-4" />
+              <span>Upload Document</span>
+            </button>
+          )}
         </div>
       )}
     </div>
