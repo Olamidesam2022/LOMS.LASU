@@ -17,9 +17,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       const saved = localStorage.getItem("theme") as Theme | null;
       return saved === "light" || saved === "dark" || saved === "system"
         ? saved
-        : "system";
+        : "light";
     } catch {
-      return "system";
+      return "light";
     }
   });
   const [isDark, setIsDark] = useState(() => {
@@ -28,7 +28,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       const currentTheme =
         saved === "light" || saved === "dark" || saved === "system"
           ? saved
-          : "system";
+          : "light";
 
       return currentTheme === "dark"
         || (currentTheme === "system"

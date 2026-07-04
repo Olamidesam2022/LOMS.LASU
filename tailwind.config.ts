@@ -108,9 +108,9 @@ export default {
         "scale-in": "scale-in 0.2s ease-out",
       },
       boxShadow: {
-        'card': '0 4px 24px -4px hsl(222 47% 11% / 0.08)',
-        'card-hover': '0 8px 32px -4px hsl(222 47% 11% / 0.12)',
-        'gold': '0 4px 20px -4px hsl(45 93% 58% / 0.3)',
+        'card': '0 1px 3px hsl(220 18% 16% / 0.05)',
+        'card-hover': '0 6px 18px -8px hsl(220 18% 16% / 0.16)',
+        'gold': '0 3px 14px -6px hsl(35 70% 34% / 0.22)',
       },
     },
   },

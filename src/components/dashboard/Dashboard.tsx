@@ -185,7 +185,8 @@ export function Dashboard({
                   !item.superadminOnly ||
                   (!isViewingAs &&
                     (role === "superadmin" || role === "admin") &&
-                    (effectiveRole === "superadmin" || effectiveRole === "admin")),
+                    (effectiveRole === "superadmin" ||
+                      effectiveRole === "admin")),
               )
               .map((item) => {
                 const Icon = item.icon;
