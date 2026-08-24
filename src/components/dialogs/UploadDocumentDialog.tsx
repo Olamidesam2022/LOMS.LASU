@@ -90,7 +90,7 @@ export function UploadDocumentDialog({
       setSelectedFile(null);
       setUploadStatus('idle');
       onOpenChange(false);
-    } catch (error: any) {
+    } catch (error) {
       const message = error.message || 'Please try again.';
       setUploadStatus('failed');
       setUploadError(message);

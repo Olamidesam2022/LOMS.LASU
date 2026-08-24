@@ -1,7 +1,7 @@
--- LOMS per-user account isolation verification/update script.
+-- Legal Case Manager per-user account isolation verification/update script.
 -- Run in the Supabase SQL editor with an owner/admin connection.
 
--- Your current project migrations predate some LOMS tables used by the
+-- Your current project migrations predate some Legal Case Manager tables used by the
 -- isolation/progress features, so this section adds missing support objects
 -- idempotently. Existing tables/columns are left untouched.
 alter table public.cases

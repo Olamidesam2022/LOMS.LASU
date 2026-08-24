@@ -71,10 +71,16 @@ serve(async (req: Request) => {
 
     const userId = created.user.id;
 
-    // Insert profile
+    // Insert or approve profile
     const { error: profileErr } = await admin
       .from("profiles")
-      .insert({ user_id: userId, full_name: fullName, email });
+      .upsert({
+        id: userId,
+        full_name: fullName,
+        email,
+        role: "superadmin",
+        status: "approved",
+      });
     if (profileErr) {
       await admin.auth.admin.deleteUser(userId);
       return new Response(
@@ -82,21 +88,6 @@ serve(async (req: Request) => {
           error: "Failed to insert profile",
           debug: profileErr,
         }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    // Insert role
-    const { error: roleErr } = await admin
-      .from("user_roles")
-      .insert({ user_id: userId, role: "superadmin" });
-    if (roleErr) {
-      await admin.auth.admin.deleteUser(userId);
-      return new Response(
-        JSON.stringify({ error: "Failed to insert role", debug: roleErr }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },

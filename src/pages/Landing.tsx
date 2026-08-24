@@ -93,7 +93,7 @@ const slides = [
     eyebrow: "Secure workspace",
     title: "Legal work, records, and accountability in one secure workspace",
     description:
-      "LOMS brings litigation, advisory requests, documents, court calendar, records, archive, approvals, and audit history into a calmer operating system for the Legal Unit",
+      "Legal Case Manager brings litigation, advisory requests, documents, court calendars, records, archives, approvals, and audit history into one calm operating system for law firms",
   },
   {
     id: "modules",
@@ -109,7 +109,7 @@ const slides = [
     eyebrow: "Clear process",
     title: "Clear entry, clear ownership, clear record",
     description:
-      "The landing story now follows the application itself: controlled access first, structured matter work next, then durable records with activity history",
+      "The workflow follows the application itself: controlled access first, structured matter work next, then durable records with activity history",
   },
 ];
 
@@ -161,7 +161,7 @@ export default function Landing() {
                   alt=""
                   className="h-7 w-7 rounded-md object-cover"
                 />
-                LASU Legal Unit Case Management
+                Law Firm Case Management
               </div>
 
               <p className="landing-slide-count">
@@ -265,7 +265,7 @@ export default function Landing() {
                         Module map
                       </p>
                       <h2 className="mt-1 text-2xl font-black text-foreground">
-                        One place for the whole unit
+                        One place for the whole firm
                       </h2>
                     </div>
                     <Database className="h-8 w-8 text-foreground" />

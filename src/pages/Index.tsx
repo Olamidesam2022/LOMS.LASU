@@ -255,7 +255,7 @@ const Index = () => {
         try {
           await deleteCase(caseItem);
           toast.success("Case deleted");
-        } catch (error: any) {
+        } catch (error) {
           toast.error("Failed to delete case", {
             description: error.message || "Please try again.",
           });
@@ -306,7 +306,7 @@ const Index = () => {
           setViewAdvisoryOpen(false);
           setSelectedAdvisory(null);
           toast.success("Advisory request deleted");
-        } catch (error: any) {
+        } catch (error) {
           toast.error("Failed to delete advisory request", {
             description: error.message || "Please try again.",
           });
@@ -324,7 +324,7 @@ const Index = () => {
     try {
       await downloadDocument(doc);
       toast.success(`Opening document: ${doc.name}`);
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Failed to download document", {
         description: error.message || "Please try again.",
       });
@@ -363,7 +363,7 @@ const Index = () => {
 
           await deleteDocument(doc);
           toast.success("Document deleted");
-        } catch (error: any) {
+        } catch (error) {
           toast.error("Failed to delete document", {
             description: error.message || "Please try again.",
           });
@@ -395,7 +395,7 @@ const Index = () => {
     try {
       await updateUser(legacyUser.id, { role: nextRole, status: nextStatus });
       toast.success("User updated.");
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Failed to update user", {
         description: error.message || "Please try again.",
       });
@@ -421,7 +421,7 @@ const Index = () => {
         try {
           await deleteUser(legacyUser.id);
           toast.success("User deleted.");
-        } catch (error: any) {
+        } catch (error) {
           toast.error("Failed to delete user", {
             description: error.message || "Please try again.",
           });
@@ -459,7 +459,7 @@ const Index = () => {
       setSelectedDocument(null);
       handleViewChange("dashboard");
       toast.success(`Viewing as ${legacyUser.name}`);
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Could not start view-as mode", {
         description: error.message || "Please try again.",
       });

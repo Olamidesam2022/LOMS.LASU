@@ -23,7 +23,7 @@ interface SettingsProps {
 }
 
 export function Settings({ currentUser }: SettingsProps) {
-  const storageKey = `lasu-settings-${currentUser.id}`;
+  const storageKey = `legal-case-manager-settings-${currentUser.id}`;
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(true);
   const [hearingReminders, setHearingReminders] = useState(true);
@@ -70,7 +70,7 @@ export function Settings({ currentUser }: SettingsProps) {
       setSaveStatus("saved");
       toast.success("Settings saved successfully");
       window.setTimeout(() => setSaveStatus("idle"), 2500);
-    } catch (error: any) {
+    } catch (error) {
       setSaveStatus("failed");
       toast.error("Could not save settings", {
         description: error.message || "Please try again.",
@@ -446,12 +446,12 @@ export function Settings({ currentUser }: SettingsProps) {
             <div>
               <h3 className="font-semibold text-foreground">Need Help?</h3>
               <p className="text-sm text-muted-foreground">
-                Contact the LASU ICT Support team for assistance
+                Contact your firm's system administrator for assistance
               </p>
             </div>
           </div>
           <button
-            onClick={() => toast.info("Support contact: ict@lasu.edu.ng")}
+            onClick={() => toast.info("Support contact: system administrator")}
             className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
           >
             Contact Support

@@ -11,7 +11,7 @@ interface CreateUserRequest {
   email: string;
   password: string;
   fullName: string;
-  role: "admin" | "legal_officer" | "superadmin";
+  role: "admin" | "staff" | "superadmin";
   department?: string;
 }
 
@@ -90,11 +90,13 @@ serve(async (req: Request) => {
 
     const userId = created.user.id;
 
-    // Insert profile
-    const { error: profileErr } = await admin.from("profiles").insert({
-      user_id: userId,
+    // Insert approved profile
+    const { error: profileErr } = await admin.from("profiles").upsert({
+      id: userId,
       full_name: fullName,
       email: email,
+      role,
+      status: "approved",
       department: department || null,
     });
 
@@ -106,23 +108,6 @@ serve(async (req: Request) => {
           error: "Failed to create profile",
           debug: profileErr,
         }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    // Assign role
-    const { error: roleErr } = await admin.from("user_roles").insert({
-      user_id: userId,
-      role: role,
-    });
-
-    if (roleErr) {
-      await admin.auth.admin.deleteUser(userId);
-      return new Response(
-        JSON.stringify({ error: "Failed to assign role", debug: roleErr }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },

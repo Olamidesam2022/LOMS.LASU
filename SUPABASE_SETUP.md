@@ -1,25 +1,55 @@
 # Supabase Setup
 
-## 1. Run SQL in Supabase
+Use this guide for a fresh Supabase project for Legal Case Manager.
 
-Open your Supabase project, go to **SQL Editor**, paste the full contents of:
+## 1. Create or choose a Supabase project
 
-`supabase/migrations/20260502_supabase_only_backend.sql`
+In the Supabase dashboard, open your project and copy:
+
+- Project URL
+- Project API `anon public` key
+- Project API `service_role` key, only for server/admin scripts
+
+## 2. Run the fresh SQL setup
+
+Open **Supabase Dashboard > SQL Editor**, paste the full contents of:
+
+`supabase/legal_case_manager_fresh_setup.sql`
 
 Then click **Run**.
 
-## 2. Add Vite environment variables
+This creates the current app schema:
 
-Create `.env.local` in the project root:
+- `profiles`
+- `notifications`
+- `cases`
+- `case_access`
+- `case_notes`
+- `case_tasks`
+- `deadlines`
+- `advisory_requests`
+- `documents`
+- `audit_logs`
+- private storage bucket `case-documents`
+
+The older files in `supabase/migrations/` are historical incremental migrations. For a new project, use the consolidated file above.
+
+## 3. Swap the frontend environment variables
+
+Edit `.env.local` in the project root:
 
 ```env
-VITE_SUPABASE_URL=https://your-project-id.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-public-key
 ```
 
-## 3. Create the first superadmin
+These are read by `src/integrations/supabase/client.ts`.
 
-Start the app, sign up normally, then go back to Supabase **SQL Editor** and run:
+Restart the dev server after changing `.env.local`.
+
+## 4. Create the first superadmin
+
+Option A: sign up normally in the app, then run this in Supabase SQL Editor:
 
 ```sql
 update public.profiles
@@ -27,90 +57,27 @@ set role = 'superadmin', status = 'approved'
 where email = 'your-email@example.com';
 ```
 
-Replace `your-email@example.com` with the email you used to sign up.
+Option B: use the helper script with your new project keys:
 
-## Example Supabase Queries
-
-Signup is handled in `src/context/AuthContext.tsx`:
-
-```ts
-await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } });
-await supabase.from("profiles").upsert({
-  id: user.id,
-  email,
-  full_name: fullName,
-  role: "staff", // or "admin" when selected during signup
-  status: "pending",
-});
+```bash
+SUPABASE_URL=https://your-project-ref.supabase.co \
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key \
+SUPERADMIN_EMAIL=you@example.com \
+SUPERADMIN_PASSWORD="StrongPassword123!" \
+SUPERADMIN_NAME="Your Name" \
+node scripts/create-superadmin.js
 ```
 
-Approve user:
+Do not commit service-role keys.
 
-```ts
-await supabase.from("profiles").update({ status: "approved" }).eq("id", userId);
-```
+## 5. Optional Edge Functions
 
-Promote admin:
+If you deploy the Supabase functions, set these Supabase function secrets:
 
-```ts
-await supabase.from("profiles").update({ role: "admin" }).eq("id", userId);
-```
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `CREATE_USER_SECRET`
+- `BOOTSTRAP_SECRET`
 
-Fetch notifications:
-
-```ts
-const { data } = await supabase
-  .from("notifications")
-  .select("*")
-  .order("created_at", { ascending: false });
-```
-
-Mark notification as read:
-
-```ts
-await supabase.from("notifications").update({ read: true }).eq("id", notificationId);
-```
-
-Create case:
-
-```ts
-await supabase.from("cases").insert({
-  title,
-  description,
-  created_by: user.id,
-});
-```
-
-## Files Changed
-
-Created:
-
-- `src/context/AuthContext.tsx`
-- `src/hooks/useCases.ts`
-- `src/hooks/useNotifications.ts`
-- `src/hooks/useProfiles.ts`
-- `supabase/migrations/20260502_supabase_only_backend.sql`
-- `SUPABASE_SETUP.md`
-
-Replaced:
-
-- `src/integrations/supabase/client.ts`
-- `src/contexts/AuthContext.tsx`
-- `src/pages/SignUp.tsx`
-- `src/components/layout/Header.tsx`
-
-Updated:
-
-- `src/pages/Index.tsx`
-- `src/components/dialogs/AddCaseDialog.tsx`
-- `src/components/dialogs/AddUserDialog.tsx`
-- `src/components/dashboard/Dashboard.tsx`
-- `src/components/users/UserManagement.tsx`
-- `src/components/layout/Sidebar.tsx`
-- `src/types/legal.ts`
-
-Delete after confirming:
-
-- `supabase/functions/`
-- `scripts/create-superadmin.js`
-- `src/data/mockData.ts`
+Deploy only the functions you intend to use.

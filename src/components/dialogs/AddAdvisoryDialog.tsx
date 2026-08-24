@@ -103,7 +103,7 @@ export function AddAdvisoryDialog({
 
       setFormData({ ...emptyForm });
       onOpenChange(false);
-    } catch (error: any) {
+    } catch (error) {
       toast.error(`Failed to ${isEditing ? 'update' : 'create'} advisory request`, {
         description: error.message || 'Please try again.',
       });

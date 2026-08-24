@@ -177,7 +177,7 @@ export function AddCaseDialog({
         description: '',
       });
       onOpenChange(false);
-    } catch (error: any) {
+    } catch (error) {
       toast.error('Failed to create case', {
         description: error.message || 'Please try again.',
       });

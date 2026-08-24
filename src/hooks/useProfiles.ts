@@ -7,7 +7,7 @@ interface ProfileRow {
   id: string;
   email: string;
   full_name: string;
-  role: AppRole | "legal_officer";
+  role: AppRole;
   status: ProfileStatus;
   created_at: string;
 }
@@ -16,7 +16,7 @@ const toUser = (profile: ProfileRow): User => ({
   id: profile.id,
   name: profile.full_name || profile.email,
   email: profile.email,
-  role: profile.role === "legal_officer" ? "staff" : profile.role,
+  role: profile.role,
   status: profile.status,
   department: "Legal",
 });
@@ -57,9 +57,7 @@ export function useProfiles() {
     const rows = (data || []) as ProfileRow[];
     const visibleRows =
       role === "admin"
-        ? rows.filter((profile) =>
-            ["staff", "legal_officer"].includes(String(profile.role)),
-          )
+        ? rows.filter((profile) => profile.role === "staff")
         : rows;
 
     setUsers(visibleRows.map(toUser));

@@ -16,10 +16,10 @@ export function BrandLogo({ to, compact = false, className }: BrandLogoProps) {
       {!compact && (
         <span className="min-w-0">
           <span className="block text-base font-extrabold leading-tight text-foreground">
-            LASU Legal
+            Legal Case
           </span>
           <span className="block text-[11px] font-medium leading-tight text-muted-foreground">
-            Case Management
+            Manager
           </span>
         </span>
       )}

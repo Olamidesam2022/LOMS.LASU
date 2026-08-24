@@ -51,7 +51,7 @@ export default function Login() {
         });
         navigate("/app");
       }
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Login failed",
         description: error.message || "An unexpected error occurred",
@@ -75,7 +75,7 @@ export default function Login() {
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-[26.25rem] items-center">
         <div className="surface-card w-full p-5 sm:p-8">
           <div className="mb-7 text-center">
-            <h1 className="text-2xl font-extrabold text-foreground">LASU Legal CMS</h1>
+            <h1 className="text-2xl font-extrabold text-foreground">Legal Case Manager</h1>
             <p className="mt-2 text-sm text-muted-foreground">
               Sign in to continue to your workspace
             </p>
@@ -176,9 +176,9 @@ export default function Login() {
 
           {/* Footer */}
           <p className="mt-6 text-center text-xs text-muted-foreground">
-            Lagos State University Legal Unit
+            Secure law firm workspace
             <br />
-            Protected under NDPR 2019 guidelines
+            Protected legal operations
           </p>
         </div>
       </div>

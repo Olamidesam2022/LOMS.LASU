@@ -56,12 +56,12 @@ export function Dashboard({
           <div>
             <p className="text-sm font-semibold text-muted-foreground"></p>
             <h1 className="mt-1 text-3xl font-black tracking-tight text-foreground sm:text-4xl">
-              LASU Legal Unit
+              Law Firm Workspace
             </h1>
           </div>
           <div className="flex flex-wrap gap-2">
             {[
-              "Organization",
+              "Firm",
               "Cases",
               "Documents",
               "Calendar",
@@ -73,7 +73,7 @@ export function Dashboard({
                 key={item}
                 onClick={() =>
                   onNavigate?.(
-                    item === "Organization"
+                    item === "Firm"
                       ? "dashboard"
                       : item === "Cases"
                         ? "litigation"
@@ -82,7 +82,7 @@ export function Dashboard({
                 }
                 className={cn(
                   "rounded-full px-4 py-2 text-xs font-bold transition-colors",
-                  item === "Organization"
+                  item === "Firm"
                     ? "bg-foreground text-background"
                     : "bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}

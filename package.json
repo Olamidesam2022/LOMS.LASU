@@ -8,9 +8,18 @@
     "build": "node ./node_modules/vite/bin/vite.js build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "mobile:sync": "node scripts/capacitor-workflow.mjs sync",
+    "mobile:copy": "node scripts/capacitor-workflow.mjs copy",
+    "android": "node scripts/capacitor-workflow.mjs run android",
+    "android:open": "node scripts/capacitor-workflow.mjs open android",
+    "ios": "node scripts/capacitor-workflow.mjs run ios",
+    "ios:open": "node scripts/capacitor-workflow.mjs open ios"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/ios": "^8.5.0",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
@@ -63,6 +72,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.0",
     "@eslint/js": "^9.32.0",
     "@tailwindcss/typography": "^0.5.16",
     "@types/node": "^22.16.5",

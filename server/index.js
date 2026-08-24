@@ -78,5 +78,5 @@ app.patch("/api/admin/users/:userId", async (req, res) => {
 
 const port = process.env.PORT || 4000;
 app.listen(port, () => {
-  console.log(`LOMS admin server listening on port ${port}`);
+  console.log(`Legal Case Manager admin server listening on port ${port}`);
 });

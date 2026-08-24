@@ -11,7 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 import { writeAuditLog } from "@/lib/audit";
 import { User } from "@/types/legal";
 
-const STORAGE_KEY = "loms:view-as-user";
+const STORAGE_KEY = "legal-case-manager:view-as-user";
 
 interface ViewAsContextValue {
   viewingAsUser: User | null;

@@ -58,7 +58,7 @@ export function AddUserDialog({ open, onOpenChange, onUserCreated }: AddUserDial
       const inviteText = [
         `Hello ${formData.name},`,
         '',
-        'Please create your LASU Legal Case Management account using this link:',
+        'Please create your Legal Case Manager account using this link:',
         signupUrl,
         '',
         `Use this email: ${formData.email}`,
@@ -81,7 +81,7 @@ export function AddUserDialog({ open, onOpenChange, onUserCreated }: AddUserDial
       });
       onOpenChange(false);
       onUserCreated?.();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error preparing invite:', error);
       toast.error('Failed to copy invite instructions', {
         description: error.message || 'An unexpected error occurred',
@@ -117,7 +117,7 @@ export function AddUserDialog({ open, onOpenChange, onUserCreated }: AddUserDial
             <Input
               id="userEmail"
               type="email"
-              placeholder="e.g., adamu.johnson@lasu.edu.ng"
+              placeholder="e.g., adamu.johnson@lawfirm.com"
               value={formData.email}
               onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
               disabled={isLoading}

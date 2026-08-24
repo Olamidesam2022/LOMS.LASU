@@ -50,7 +50,7 @@ const baseSteps: GuideStep[] = [
   {
     title: "Register legal work",
     description:
-      "Create litigation cases and advisory requests with the information the Legal Unit needs to track ownership, status, and next action.",
+      "Create litigation cases and advisory requests with the information your legal team needs to track ownership, status, and next action.",
     icon: FolderPlus,
     bullets: [
       "Add suit numbers, parties, court details, and counsel.",
@@ -108,7 +108,7 @@ const superadminStep: GuideStep = {
   icon: Users,
   bullets: [
     "Review pending approvals from the dashboard.",
-    "Approve only verified Legal Unit users.",
+    "Approve only verified firm users.",
     "Change roles or deactivate accounts from user management.",
   ],
   actionLabel: "Open users",
@@ -133,7 +133,7 @@ export function OnboardingGuide({
   onNavigate,
 }: OnboardingGuideProps) {
   const [activeStep, setActiveStep] = useState(0);
-  const storageKey = `loms:onboarding-seen:${userId}`;
+  const storageKey = `legal-case-manager:onboarding-seen:${userId}`;
 
   const steps = useMemo(
     () => (role === "superadmin" ? [...baseSteps, superadminStep] : baseSteps),
